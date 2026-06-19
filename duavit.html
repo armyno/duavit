@@ -1,0 +1,1288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Duck Race Simulator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            overflow: hidden;
+            margin: 0;
+            padding: 0;
+            background-color: #000;
+            touch-action: none; /* Ngăn cuộn trang trên mobile */
+        }
+
+        #game-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            background: linear-gradient(to bottom, #7fc1ff 0%, #b8e1ff 30%, #00b100 30%, #008a00 40%, #8b4513 40%, #5c3a21 42%, #3a8fb7 42%, #2a7a9f 100%);
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 10;
+        }
+
+        .ui-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 20;
+            pointer-events: none;
+        }
+
+        .interactive {
+            pointer-events: auto;
+        }
+
+        .btn-black {
+            background-color: #000;
+            color: white;
+            border: 2px solid white;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        
+        .timer-display {
+            background-color: #e6e6fa;
+            border: 4px solid #333;
+            border-radius: 12px;
+            font-family: monospace;
+        }
+
+        .modal-overlay {
+            background-color: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(2px);
+        }
+
+        .settings-panel {
+            background: linear-gradient(to bottom, #d6edff 0%, #ffffff 50%, #e8f4f8 100%);
+            border: 4px solid #333;
+            border-radius: 8px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+        }
+
+        .keypad-btn {
+            background-color: #74d600;
+            border: 3px solid #333;
+            border-radius: 6px;
+            color: #111;
+            font-weight: bold;
+            box-shadow: inset 0 -3px 0 rgba(0,0,0,0.2);
+            transition: transform 0.1s, box-shadow 0.1s;
+            cursor: pointer;
+        }
+        .keypad-btn:active {
+            transform: translateY(2px);
+            box-shadow: inset 0 -1px 0 rgba(0,0,0,0.2);
+        }
+        .keypad-btn-gray {
+            background-color: #b0b0b0;
+        }
+
+        .tab-btn {
+            background-color: #fff;
+            border: 3px solid #000;
+            border-bottom: none;
+            border-radius: 12px 12px 0 0;
+            font-weight: bold;
+            z-index: 1;
+            position: relative;
+            cursor: pointer;
+        }
+        .tab-btn.active {
+            background-color: #fff;
+            padding-bottom: 5px;
+            margin-bottom: -3px;
+        }
+        .tab-btn.inactive {
+            background-color: #f0f0f0;
+            color: #666;
+            transform: scaleY(0.95);
+            transform-origin: bottom;
+        }
+
+        .panel-content {
+            background-color: #fff;
+            border: 4px solid #000;
+            border-radius: 20px;
+            position: relative;
+            z-index: 2;
+            box-shadow: 0 5px 0 #333;
+        }
+
+        .btn-green-main {
+            background-color: #6cc200;
+            border: 3px solid #fff;
+            outline: 3px solid #000;
+            border-radius: 25px;
+            color: white;
+            font-weight: bold;
+            text-shadow: 1px 1px 0 #333;
+            cursor: pointer;
+        }
+
+        input[type=range] {
+            -webkit-appearance: none;
+            width: 100%;
+            background: transparent;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 24px;
+            width: 24px;
+            border-radius: 50%;
+            background: #d1d5db;
+            border: 2px solid #000;
+            cursor: pointer;
+            margin-top: -8px;
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 8px;
+            cursor: pointer;
+            background: #9ca3af;
+            border-radius: 4px;
+            border: 2px solid #000;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="game-container">
+        <!-- Canvas vẽ nền và vịt -->
+        <canvas id="gameCanvas"></canvas>
+
+        <!-- Lớp UI đè lên Canvas -->
+        <div class="ui-layer flex flex-col justify-between">
+            
+            <!-- Header lúc đang chơi -->
+            <div class="w-full flex justify-between items-start p-2">
+                <div class="flex gap-1 interactive">
+                    <button onclick="toggleSettings()" class="btn-black p-2 text-2xl hover:bg-gray-800"><i class="fas fa-cog"></i></button>
+                    <button onclick="toggleSound()" id="soundBtn" class="btn-black p-2 text-2xl hover:bg-gray-800"><i class="fas fa-volume-up"></i></button>
+                    <button onclick="shuffleDucks()" class="btn-black p-2 text-sm font-bold flex items-center ml-2 bg-green-700 border-none px-4 rounded-md hover:bg-green-600">
+                        <i class="fas fa-random mr-2"></i> Shuffle Characters
+                    </button>
+                </div>
+                
+                <div class="flex items-center gap-4 interactive mr-4 mt-2">
+                    <div class="flex flex-col gap-2 text-white font-bold text-lg drop-shadow-md select-none mr-2">
+                        <button id="startBtn" onclick="toggleRace()" class="border-2 border-white rounded-lg px-6 py-1.5 bg-black/40 hover:bg-white hover:text-black transition-colors cursor-pointer shadow-lg w-24">Start</button>
+                        <button onclick="resetRace()" class="border-2 border-white rounded-lg px-6 py-1.5 bg-black/40 hover:bg-white hover:text-black transition-colors cursor-pointer shadow-lg w-24">Clear</button>
+                    </div>
+                    <div class="timer-display text-5xl font-bold px-6 py-2 min-w-[280px] text-center select-none">
+                        <span id="timerDisplay">00:00:30</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal Cài đặt -->
+            <div id="settingsOverlay" class="absolute inset-0 modal-overlay interactive flex justify-center items-center flex-col transition-opacity duration-300 z-50">
+                
+                <!-- Nút Back góc trái -->
+                <button onclick="toggleSettings()" class="absolute top-4 left-4 bg-black text-white text-4xl px-4 py-2 hover:bg-gray-800 rounded">
+                    <i class="fas fa-chevron-left"></i>
+                </button>
+
+                <!-- Vùng thiết lập thời gian và tab -->
+                <div class="settings-panel p-4 pb-8 w-[800px] flex flex-col items-center mt-12">
+                    
+                    <div class="w-full flex justify-center mb-4 relative select-none">
+                         <div class="timer-display text-7xl font-bold px-10 py-4 bg-[#eef0ff]" id="settingsTimerText">
+                            00:00:30
+                         </div>
+                        <i class="fas fa-alarm-clock absolute left-10 top-8 text-4xl text-gray-300"></i>
+                    </div>
+
+                    <!-- Bàn phím số -->
+                    <div class="flex gap-2 mb-8 select-none">
+                        <div class="grid grid-cols-5 gap-2 w-[500px]">
+                            <button class="keypad-btn text-3xl py-2" onclick="pressKey(5)">5</button>
+                            <button class="keypad-btn text-3xl py-2" onclick="pressKey(6)">6</button>
+                            <button class="keypad-btn text-3xl py-2" onclick="pressKey(7)">7</button>
+                            <button class="keypad-btn text-3xl py-2" onclick="pressKey(8)">8</button>
+                            <button class="keypad-btn text-3xl py-2" onclick="pressKey(9)">9</button>
+                            <button class="keypad-btn text-3xl py-2" onclick="pressKey(0)">0</button>
+                            <button class="keypad-btn text-3xl py-2" onclick="pressKey(1)">1</button>
+                            <button class="keypad-btn text-3xl py-2" onclick="pressKey(2)">2</button>
+                            <button class="keypad-btn text-3xl py-2" onclick="pressKey(3)">3</button>
+                            <button class="keypad-btn text-3xl py-2" onclick="pressKey(4)">4</button>
+                        </div>
+                        <div class="flex flex-col gap-2 w-[120px]">
+                            <button class="keypad-btn text-3xl py-2 h-full" onclick="setTargetTime()">Set</button>
+                            <button class="keypad-btn keypad-btn-gray text-2xl py-2 h-full" onclick="clearKeypad()">Clear</button>
+                        </div>
+                    </div>
+
+                    <!-- Tabs Số lượng / Tên -->
+                    <div class="w-full max-w-[500px] mt-4 relative">
+                        <div class="flex justify-center px-4 w-full absolute -top-[34px] left-0 select-none">
+                            <button id="tabNumbers" onclick="switchTab('numbers')" class="tab-btn inactive w-1/2 py-2 text-xl">Numbers</button>
+                            <button id="tabNames" onclick="switchTab('names')" class="tab-btn active w-1/2 py-2 text-xl">Names</button>
+                        </div>
+                        
+                        <div class="panel-content w-full p-4 text-center mt-2 flex flex-col items-center pt-6 pb-6">
+                            
+                            <!-- Nội dung Tab Tên -->
+                            <div id="contentNames" class="w-full">
+                                <button onclick="openNameEditor()" class="btn-green-main w-full py-3 text-2xl mb-2 hover:bg-green-500 transition-colors">Edit List</button>
+                                <p class="text-xl font-semibold border-t-4 border-black inline-block px-8 pt-2 mt-2 bg-white rounded-b-xl -mb-10 shadow-[0_5px_0_#333] relative z-10">Names in list: <span id="nameCountDisplay">0</span></p>
+                                <div class="flex justify-center items-center gap-2 mt-16 text-xl font-semibold select-none">
+                                    <span>Show Race Names:</span>
+                                    <i class="fas fa-check-circle text-green-500 text-2xl cursor-pointer" id="toggleNamesBtn" onclick="toggleRaceNames()"></i>
+                                </div>
+                            </div>
+
+                            <!-- Nội dung Tab Số lượng -->
+                            <div id="contentNumbers" class="w-full hidden">
+                                <div class="flex items-center justify-between px-4 mb-4 gap-3">
+                                    <div class="flex-shrink-0 w-[44px] h-[56px] bg-[#74d600] text-white flex items-center justify-center font-extrabold text-xl rounded-[50%]" id="sliderValDisplay">5</div>
+                                    <input type="range" id="duckCountSlider" min="2" max="1000" value="5" class="mx-2 flex-grow" oninput="updateSliderValue(this.value)">
+                                    <div class="flex-shrink-0 w-[44px] h-[56px] bg-[#9ca3af] text-white flex items-center justify-center font-bold text-sm rounded-[50%]">1000</div>
+                                    <input type="number" id="duckCountInput" min="2" max="1000" value="5" class="flex-shrink-0 w-20 ml-2 border-2 border-black rounded-full text-center text-xl font-bold py-1 outline-none" oninput="updateSliderValue(this.value)">
+                                </div>
+                                <!-- Nút bật tắt số thứ tự hiển thị rõ ràng -->
+                                <div class="flex justify-center items-center gap-2 mt-4 text-xl font-semibold select-none">
+                                    <span>Show Race Numbers:</span>
+                                    <i class="fas fa-check-circle text-green-500 text-2xl cursor-pointer" id="toggleNumbersBtn" onclick="toggleRaceNumbers()"></i>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal Nhập Tên -->
+            <div id="nameEditorOverlay" class="absolute inset-0 bg-black/50 interactive hidden justify-center items-center z-[60]">
+                <div class="bg-white border-4 border-black rounded-2xl w-[600px] p-0 shadow-[0_10px_0_#333] flex flex-col">
+                    <div class="flex justify-between items-center px-4 py-2 border-b-2 border-gray-200">
+                        <span class="font-bold text-lg">Enter up to 1000 Names:</span>
+                        <button onclick="clearNames()" class="text-sm font-semibold hover:underline text-blue-600">Clear List</button>
+                    </div>
+                    <textarea id="nameInputTextarea" class="w-full h-[300px] p-4 text-xl outline-none resize-none" placeholder="Enter one name per line..."></textarea>
+                    <div class="p-4 bg-gray-100 rounded-b-xl flex flex-col items-center relative">
+                        <button onclick="saveNames()" class="btn-green-main w-[80%] py-2 text-2xl hover:bg-green-500 transition-colors">Done</button>
+                        <p class="mt-2 font-semibold bg-white px-6 py-1 border-2 border-black rounded shadow-[0_3px_0_#333]">Names in list: <span id="editorNameCount">0</span>/1000</p>
+                        <button onclick="closeNameEditor()" class="absolute right-4 top-4 text-gray-500 hover:text-black"><i class="fas fa-times text-2xl"></i></button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal Vịt Chiến Thắng -->
+            <div id="winnerModal" class="absolute inset-0 bg-black/20 interactive hidden justify-center items-center z-[70] pointer-events-none">
+                <div class="bg-white border-4 border-black rounded-3xl p-8 text-center flex flex-col items-center transform transition-transform scale-0 shadow-2xl pointer-events-auto relative min-w-[360px]" id="winnerContent">
+                    
+                    <!-- Nút Đóng (X) Popup Kết quả -->
+                    <button onclick="dismissWinnerModalOnly()" class="absolute top-4 right-4 text-gray-400 hover:text-black hover:scale-110 transition-transform cursor-pointer p-1">
+                        <i class="fas fa-times text-2xl"></i>
+                    </button>
+
+                    <h1 class="text-6xl font-black text-red-500 mb-4 drop-shadow-md tracking-wider">WINNER!</h1>
+                    <canvas id="winnerDuckCanvas" width="200" height="200" class="!relative !w-auto !h-auto z-0 drop-shadow-lg"></canvas>
+                    <h2 id="winnerText" class="text-5xl font-bold mt-4 mb-8 bg-gray-200 px-8 py-2 rounded-full border-2 border-black">Name</h2>
+                    <button onclick="closeWinnerModal()" class="btn-green-main px-12 py-3 text-3xl hover:bg-green-500 transition-colors shadow-lg">Play Again</button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        // --- Trạng thái trò chơi ---
+        const state = {
+            mode: 'names',
+            namesList: [],
+            numDucks: 5,
+            showNumbers: true,
+            showNames: true,
+            isSettingsOpen: true,
+            gameState: 'idle', // 'idle', 'racing', 'finished'
+            timerMillis: 30000,      // Mặc định 30 giây
+            startTime: 0,
+            endTime: 0,              // Dùng mốc thời gian đích cho việc đếm ngược chuẩn xác
+            targetTimeMillis: 30000, // Mặc định 30 giây
+            isCountdown: true,       // Mặc định đếm ngược
+            winnerChosen: false,
+            winningDuck: null, 
+            winnerTimeout: null, 
+            ducks: [],
+            cameraX: 0,
+            zoom: 1,
+            focusY: 0,
+            finishRankCounter: 0      // Bộ đếm xếp hạng về đích của đàn vịt
+        };
+
+        // --- Hệ thống âm thanh ---
+        const sounds = {
+            cheer: new Audio('https://cdn.duckrace-game.com/game/sounds/cheer.mp3'),
+            horn: new Audio('https://cdn.duckrace-game.com/game/sounds/airhorn.mp3'),
+            quacks: [
+                new Audio('https://cdn.duckrace-game.com/game/sounds/duck0.mp3'),
+                new Audio('https://cdn.duckrace-game.com/game/sounds/duck1.mp3'),
+                new Audio('https://cdn.duckrace-game.com/game/sounds/duck2.mp3')
+            ]
+        };
+        let isMuted = false;
+
+        function playSound(type) {
+            if (isMuted) return;
+            try {
+                if (type === 'cheer') { sounds.cheer.currentTime = 0; sounds.cheer.play(); }
+                if (type === 'horn') { sounds.horn.currentTime = 0; sounds.horn.play(); }
+                if (type === 'quack') {
+                    const q = sounds.quacks[Math.floor(Math.random() * sounds.quacks.length)];
+                    q.currentTime = 0;
+                    q.play();
+                }
+            } catch (e) { console.log('Audio error:', e); }
+        }
+
+        function toggleSound() {
+            isMuted = !isMuted;
+            document.getElementById('soundBtn').innerHTML = isMuted ? '<i class="fas fa-volume-mute"></i>' : '<i class="fas fa-volume-up"></i>';
+        }
+
+        const START_X = 2000; 
+        // Tính toán khoảng cách ban đầu cho 30 giây
+        let currentRaceDist = START_X + Math.max(1200, (30000 / 1000) * 60 * 0.8); 
+        let keypadInputStr = "000030"; // Giá trị mặc định trên bàn phím số là 30 giây
+
+        // --- Hình ảnh Bờ Sông ---
+        const bankImg = new Image();
+        bankImg.src = "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhjPLkQhsJzzFdLq_xg5xJZLnWnECRYI9l6X50_NlcJ-W80TCMpw2UlZvVv2KCWx56QgS5YrnNNYw0HC899eMC2voZYXUu5yBuR1u7SUhd-zS61vkqBktsW0n9OIh8l7z87Rmg118_OHuEUecW2bjFwJFAZjNPRfI8sHiLEaAk2wFBQd9R2LwOpYqmuWX8/s1600/398f0982-2021-4529-8f78-046940d14ab2.png";
+
+        // --- Hình ảnh Vịt (Chỉ sử dụng 50 vịt theo danh sách liên kết hình ảnh) ---
+        const duckImagesUrls = [
+            "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEio5NMQMiuKXTCOXQvzxb5vFWXjZG7_IIysgX8Zg14gzmGpfsk22qMGxy2ypHHmyE2XNdX-ZzT-aUufD2JVSbRtOXwZG9Q51OtghktjqsC3F57nMz1ivSTY2o5gdynhV-4oyum_9ofgC94dRkothtwL_xVo1qC5uwzWinCBVM1DJNmZVwUHowKRptuY3D8/s1600/1.png",
+            "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEg9vFCpKyoxx3KKVa0jhydlnzr4Q8RL0YCsbnbvlVAjMBAf5bOK-TwDCTLkN6Mw0ms7CMpQiJrCkNivC1SMcuFQI8ZM_N-zKiEeFZ9uGz0gw3id5rIlAbgDJG16ydwdIYXCzw5ZiFhzjMcjJnDSj2t_KGvakYcED8sciotydDWlBYjQZrZIcZc5H-nwLXc/s1600/2.png",
+            "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiLePIMA1TPl7tiwjzlxbG02PBfmQgeLjBk0P-Xk28v4EN92gU-gV7MQlMQPdQxbES6t_vdP5rdTLEvLw_EdXJW2-zpDkry-vRL5m0C4XO02KRepuQvIQKtxanRpdBw_YIMhaKbnvFCigPs5eFmiJ67ji6MPsNFU0ZsA3iZbYq1MKNAZb2HNC9a07XPkWY/s1600/3.png",
+            "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgHZBy-OaHuKyHN7Ju1huDZc_2OrX1rYcG4UrCJRKacCuOiv0Z0Lnp96qI23PG1NOT_I60l-2rY1mHgBgOkFONQde9rhM0umZTYFOtCQuUd1j0y3wrr63EwEDfIXPFvMqf3ExBzIyumrRR3cnee10FQ0Vs2tHDEZ0DYoaWg7NS-Iig6px5Cb3kiqqXsj5U/s1600/4.png",
+            "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhEiFklZ7yJWqvkZEhGcVuZmjl11TtL1mcqefAk9U2Q9OlFOWkEvLN_XorM0et8V0bHtxHWp8YQSzK1qvb20DqEPvz6tlSls2cNVtMYHm19sYgXaBgWpcpwat7LqiJJTEMqFAomxihhjPpQOa94fXMOtqjlWrzAN1c9T_9jZus41GusI1qaRCbNwSAp8ZM/s1600/5.png",
+            "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhhkWIK_vdwqCFBaR1lPkj9c-cLWPDTqccESlTTGRPLKsHoQLoRQ5Wp9cGE1GXJnJoWvRFwKapZ9PxCmQuiEIsJ5G_Ct9PIrq89-Wj9ImzWVbG4_oJxqt5bHulbk_YaLHBNCg4iOrO3N_BdAFs0fRw7RvcRVBzAs1pb1Gw5KiiDEaKZgPNBLSzyCD1fEXM/s1600/6.png",
+            "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEib6VBC7vMuXeBXSRlRVYGt67By03Nw_grgpUgz3Spbdj9WKV7SqkmdhUVwOelhrgaLLG9FnYtc4qhwKpI_xfC2TUwJndMkctDmBKgMn-wKEwkk68yIWD6V4FxK81e0y45FDAD8jayz2ZRXysIATcCn3fxduVa3PeecliLkcaGscMGLu8REhvG4eLsSL3o/s1600/7.png",
+            "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhraFOCG0JMYK6H6pkga_z3jDKI-6NvDuHGGNiS7CwNXpj1ueZLsRi_tT96TbHa-GVZB_7r9X_mq3PuNoyQUw0naccthI5-snPTrDLH0Of4u-r9qWoTlOIM-Ly-MZx-xd59-u7b_shxYnpyYD_E2bpRRsOD-RKHIXkfouGTDFEOzPTGvciXM94Nl1srdmY/s1600/8.png",
+            "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjCwc_0wqIpU_peC38biHPw6j7b6XeDBUZY44ur5MLuX8EwsGADz_MkXXO_Cz1SPzflfl0Ssd_XQN801BF0YyvFWJ4gJwNlx9cG9LsdCwr7c2-NrPhzE867skrqcqZ079JxnYm0MXoEkBOGhPbSNxACUcy34mbtYQlgvazui9pWIV6kyu2oGM0b-FyxwsA/s1600/9.png",
+            "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhGcph9EGE091RSJkLH-QgOGJNmIQKj6c2AON4ibuP7niWmZzy0lNe6UQk3LSnMlrRi3K0YGjmQ0MNNsEPco2ehvN-CybGd0QvVsIauFN3CIeMWf3jQbacdKhxPe08JHlEWaX0RBTPVu3-iXjAheuI8TU4UbbTVxmVJ2lXq7xyRl1XfaTBxmneox8by9j0/s1600/10.png",
+            "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjVd9Chs_O_c70seXP5prrpGlJYH-MBFjZbdIEqVoiMD-xQ6lt8LIljIP5vNutBUZTRg997K45oEg6pLdb9LIr70z7uuGaJaBGcmNtp2VbPqATpYnQSL7jdC2h80zRiH5PkD-Ybw25NiDp9yEiX4DXhlBp5gSNHjVrAt8XM-8I5qykGu9sIX3UWZit-QV0/s1600/11.png",
+            "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEikC-euFpJOQzFu9xxPbWpjnNKIrc1B1l4gNbaaUQERkgQCzKR3Epiu4v1d-Haqx_5UlXNbdN4ySFhNoxfcR7KrJeIhVdRyo_q5IgmPpmJFLAztE3SDQl7y2r8Q4R5SjzsoWENg2-axR5LtOBzQ1dz8snt3fhdE-vtCBt4M3bHCxRAHv9Mc0z8s2zj5XtE/s1600/12.png",
+            "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiJnbj_gUpHZOhLJfubc-L27CJXyrInXVEoYiXpDeCVCj9ZDFc8Eh_br2dzDSmHEaPEv836Hs6O2jKdIqPgizrvqz_ybz3lTDctsB79Vf_61LPPrNfCObUcKACx0m4_gwerLaSxYZcgp0flLOSjE87bJAcM7RM0q0Nc1n5xN0gKTmZ7Wm329TwgVDu0Ukg/s1600/13.png",
+            "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEg5OZmrowEZbvqWBqC_6KPR1lCMVI-Uz9RYH9IBXmw1MWy6YyH1m5BDq-FZPBZn4ueas00f6iZ2IE41j0jY8YuAhlyBpVtIK672bxt0FYxk3qLvRZ3OwHiYCcp1yEnqfKN3ccwGUoClL7apWG4pdzgBQH01Jt3wASvJ1t8NESY3WOU820lBmI9nSIaFl_s/s1600/14.png",
+            "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEi2AlpZannAin1zyMvurv75CESE77rvo5mIRFUYBpwRLsN37txuYYXnqmVBD80h-gXw4bxnwyAZtYakjNM4Vpg38nRiEypSUsftZIx01dKdvAeJpXHus8wiTO2VErEOGbYLuuT7Vn8IXKcyJd5W25TfjqkgfuvkPPGOtUteYoBDqHbQlNVdVul7Ki1g_Sc/s1600/15.png",
+            "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhy5hfSe8lGqnJjazc5eoIKsKmyw69n_Kgg9UUHlSvEGbu0i6R_QFgP5r39g4UrZSjLNxYjmdmXWsJNuFGVKTpB-vC0FNETKkLfkhH5F64YKuuOiUfnrbzGJ6x8obTu-69RGewXlHx5z4DXQBB5inZ2jUvmzqh_j9Pxj4CcITJz8bqSPi_n6M7NiosYZT8/s1600/16.png",
+            "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgKSml8gq_rmZ7ReOAwdljqf_PuvtKKIvrVTfPizfmOlwC6egVsUufv61RHPgOUsXS_K17R4G9IHVv5O3CBLm5QKVKdp8qIbM4AfG0pkM1DTUtUEHskS2PwPuZgybifs4cYIA9nuIuRWBUHTYwpQERrAnfedElqBxbqrtMQl4-3Xzb33XUMm8hN31tUhMc/s1600/17.png",
+            "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgWlO0Kjxo2qYq0GVlUz6MxhuAz7a_4wVihLdGj4o8Xn61Dgk2jhHllACtKM9q2oZ2fpM_k4lJ_FWJUhPqnr08WoVns4o7MQ5R4wUCFZOWnhOa3i2N0mqiYzLeglGrr20kvqTEF5256V9Swumm5de3daZyLCKogcaqRblGlegi2iGMmaQSQhn1Z3WlUZfM/s1600/18.png",
+            "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgjp_kKusP0RvoXAfa6q12Xks1zwgkWFxwECrjBZfY4DMFxjCGbQ0gXspzbk6_YULn0m1ABO2deFMWflJJaYkBHsxc_W6bVN41xHmCD2_FOEd4Me67mIxyFBHC-tj2jPMsJQmMd7y35sUeWX0d_2rGLCgQrv4o4Kf524eMClWQ1eIUvbxVmYrvzKyCmcNs/s1600/19.png",
+            "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgwLk1f2SZYwBF7CGJC1DHRhaC0tLGNn-SEbEbok30zEkGzLEoX4657F655y3cVVsBJDdcMymjTHQDAfG3gGg-9q7EihmYHZxo2PM6lLOTQa0w0D1q2h-hFCkjGked9Waa6aNPwmXAOILaF_i2qUorHZDJHJbrxiNpbVd7QM3S_cclKfYLfpoIYFbiz1hk/s1600/20.png",
+            "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEj6KbXrnAlSl-_O6zO1Fo1f-2gyUcZKPlW8mT_LR84yApMz7eUMlZLC3jzG0vDfu8CmNK2fK6z-PznKhClyLwlRVpZnJM8bnnS-yVPBuBi8apYC2-lDdHqDo-2RbbYu6EUHWSRhKsyyspdX1QXkMZX4LTQRaFWjEUDwe2adC5mT_I4GT29XhUQLvbXh3p8/s1600/21.png",
+            "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEh8ORxolbNHWxkSfrladCyN59OH3JniynaqV0sBWaZuDmcORdQkksBDgFnyEyKfXMj8qR8EgboSZlv3Q1RucCp4gwS8fq1GJHaz2a1DBxU7A4oRQ3UXIZ1249yk3MtlVLkKTDJ6hZPJxCLH4MuJX393wACmSOOTuGu0Fl3xF8QmvTzAp-9JqjCDtYqqSoU/s1600/22.png",
+            "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhBh0FiqKRy-uz_sSKEC2IVlTTf2Gt9xrfjkgZSoxpl0PSCb1YBPdXTs8A4Os3DMMd0IVbkoaY68LvLkohD1l39y4XKcPvz6WOD8I9Syad1O9tkihKZ-lJGg4pb6Ig0CmU-bFCZ0wyD-eMyv5BzM42qWI6BitoUEsaRHEymU8m5OQNwaruu6CbeotT8ozI/s1600/23.png",
+            "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgz84f-g6kkooPm7Hl2ZQu_0CdnIv1Q1YnvUBTQ-YR_YKO1z05dpnuPeJDhdB1BGe7v8xpzTL2LCyN7RyBKsncsv0VHT4aRaTaTsct2XKl4tlysKBBa1s1E-8XWvR7ijD9Y7qBQhHXZm-7OqCmdheQo5lTH9KXzxUGPgsJbhO07ibpjNpmoYLInO0iK6PY/s1600/24.png",
+            "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjQlza9tvEjexEzm9RtbMdJx2NCTerpKBW_Mp8ucu5kOXUIV13RsgJ5cofLbFnIGNwamcHGG7ceIlDj3EtmdnaXRJIXSo2GQ6H_e-9_kuEShdZ00wvlxunxr4cG6yv0OFJGY5vET6n9jTzdNEwC79-UhQvGWjqTtodhfrHifVf_siDXnf1sDXJfJq52lUY/s1600/25.png",
+            "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEh3xp9YIrp5_J39YSa7142gz9smSpn99UESE15XP58lXZtu2oV6MufnrnrkizTVIjuuVNEI3C3h_ODp8T3KcOuH3GjyYrkmSC6heSTqN_tuY_ZEyd6pdByJIX2ASs3xTaOsgTKfkSJsE-OsvO2noRy2wcIjYVdPjgVwwNIxNbZ2TMoadnLl6shaKwbHmPU/s1600/26.png",
+            "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiiaxCt3ujlyNyFO6dCXw9jFBMjWDlNC570crrHlihYtZMoKAK59USJcp7TQFvjt6IvE5-t5YM8fTjRBbKYlIfWHrNPnOQDxxK0gpjKhED9QJoxLpgObJfNXGzyQFvnhEXZCrDx8p8GtZlUwBaVgezZlJYeL5vV5Qmn1XWebWu2P_FKvhFkp5XbgXw9Vho/s1600/27.png",
+            "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjwd_TYnDUEeGGaFaubF9Pf6h_1Apa52G76AicFFmnZppqc9nPfJTrPk_cmwISACfuKUZi3uhLbi8MiEOzlb7dxxbeoxDzlabWxvXIDG5-KiyB3CqwDRPorsORsxZ6B6S4-VdDMAduWBNhSKjf2Rbwg7JmHJk0z25HeOZHOcDacPmZezeCbmmgH3VCs0xA/s1600/28.png",
+            "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEizZ0I1QFRfAEujCm6QOKEVBpKrRrJTQOQTU1qh3zDuhOD4gRj8H53cqEeZs7BERUIjvygg-inlTVshyphenhyphen8kFWYYy7-NHPVtAxQ3X1qT7imiNnZVYQnL-56lgK5q1RDOvZR5sG9XqA9sK7bKkIjbv6p0akp6T5soXFrZSjubQdLLuSN88CrqbY8OJlqJ0rkA/s1600/29.png",
+            "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjRGM-x0Bkcjj6sZ8GVEkKQ-NjdRVby62QyEDJnDSbNNszoPhdWn5xWxEhiSPiDtEvbDA6EbDW5hf1KdmioIKb83Dk3VgVHTmm3EC7q6W8ebB2rIS_eV2wZ_5HPHabOijPbHcegRsHiyuZ4Ef3WRx1xah0zz1v47sksheBqD4U65VzcGj6gxB3drrmZj2o/s1600/30.png",
+            "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhSJv3ceYkBoUas2JcapfpyrAdkv8tgxd2fMKnWNG0QvqHYESO8JsLNrUyXvxnxPkQvUjV8XCrc7CWC8glIn9HZKObGsL4A2cfavfm8rBXgUnuC4OEPZe-q9xocpQhBFobGcP6oJRtva45LtrYM0rpPRZKoqNF1gd2LHu9uRTFHtvDYLzS9HIWa01H4jF8/s1600/31.png",
+            "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEg0cftvZugG5ekpt5tgxm2IzvJUd3V3R9vEj5lH65bBUyF8xYZPVxG-LMLpqq4WKOnRl5l0SiuLHV3-eP7zBRNMwYCtHLxue298LXPBweISWP5MTbbHisSOYMBQW0UYvi4uKhzWmbNK2kbctvtMGCxPi8VdXhNBpvQfv1L2fcbm5NjID1gsI0iePfmFZ3I/s1600/32.png",
+            "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiTCULLQaAqTdhGfuhKUlc9fOGlBD5dJVhtLKO9aebmPNxiw0HCTkVsk9rq2mr3thaJ_F1jmg50OUk1A5m5_4pEchadC2xC9pzHYWVLQLrvRFiInJG_wEEBODM-lapt9k6DYAffMN5B8H3rJRneIYetuBVe5yUxv2Ud1gxdG190zFg7LFNDsJSFLI62Skw/s1600/33.png",
+            "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjrqEiQa-14oqsE324HrX1uTicD7T-ymGCR9JBnw2s2Y7GCo4TPKMKFi2SL1llUq8Q4ZWPcLFa00UxSNnomZiAKztsQWEqbMGgSOz7iyLjtGeHKU5ZkjxUECLO0yk5-aaSDrgKe18qNW5826iT866NyXPE2zLWXyWPfZaUldEMz3g9ny9mfqZ2t9P-OJkE/s1600/34.png",
+            "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhi0JzZ093rDc1t8IEEpg3PDBW5FJVyNc3X-IU6NzyILeFhBRMiAmS4q3asS_hCNxyfzR7hWfuJD-e5ZNc1xlvVqxHQJA56T6rOMyfEOWSkf-KGsPeBKt5AYGRwE1KV5Wuhfl_gBEM09uAe0ARHZmiDTMr_NKcNuyGoiF_E_n5GhxgtM8oQk8_5_ugUoF0/s1600/35.png",
+            "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgDKyVZ9zrzyQR8VmgRC8-oXMHC-K3fInzK8IcMzbDA9OrEwCOp2X0k8uWNI5a5Mm1BN5Mizz0eGtmSqZhpOdT6SpqKsiT01Q_vPE80UmkB8NeGi_3ZL2BLAcdz7JLarADMKUEXLP4vXMkKvKsZjA1V6trhyphenhyphenCX17PamUwvLoi-Hek_117-Y0zUcZKS5GqQ/s1600/36.png",
+            "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjxKSywcVZAScVhB_IlkUzT1Sds0QNZjxJ17RF-RybmLXomer5TCE7zPUYheHCHDofj0ZgqVtwyb_8nbLVbFdczrZZqL_Y_5sNoxxF3hQ6XeygnwoIF5INBnYxS-hGkt5qcH9y-m_blba9v2uB4rvf0ccg6sehA8ypk0fcnV6mfye6boiTj1nwI_mWHqz4/s1600/37.png",
+            "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiM5lX4Wfm4hgVzODoL1A1CMgO7u4yLcbJ5CSIJxJSvJt2Zp-hsgwAJS9hCw-vMeuh4RBDjIc89xnMcM-6hnOC_Q-hZ8M2pUD4VVSYM1J_9xAan0bXGLDt3ZyoHDWcrHcNxF8jFRWTjVBGKFGqf41ZBSFdYEYSzaVuqagac8FdS4KAji-OEscHTpcgKe8E/s1600/38.png",
+            "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhQhq-lxxcGXwcoS5_-s5SuoFFujLUX3qqK1Yn_jLI13gGkbWcIrSG4lz4aVAUTRpI7tSUReqjSF0vCD0ddvYn-wNvaf4Wc65Dp96jGYq_1YRTqkr8DwAOr2ZH6-F1hT2cx9ugrqJUQhqyPWuG19nFhC9rhUrwhPlpLH69SqvIz_YIaXg913MogPSyTVJE/s1600/39.png",
+            "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhe5elPrcVofL5FOToLVzdn159XzwQuO6ol_ZUtR8uYwZnSsLmkSmFeJwi0tHGzGINQNlrquUL86HWrCYRF2Foko1-JmOtZlqXGFQ7e1s9ecjlLtoKs4gPa5YdyhdMJN5JAAf_vnhT68Cws8kyOMrlIF-FaECTKz9DEHLZC_KbPv0Vxr0nS6rCb7jyUImg/s1600/40.png",
+            "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjFEUjY5z7HK7qpGBadL5vzgzHwKqLHL0hja6mhdZwfrc1twuMyE0ky4FqcO_eIpu5fpobnl6OMdvhq3wKrgmnwNLWs_R7IpbJG4lO80lT3eWgtcWRtRYEMxxB6kGkoAgaOwbgCu7j1NV4qcUgKCqAtVGzs4r2v8KfHy1eYm0z_gMHRYjcnY3iVS_1nybc/s1600/41.png",
+            "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEi-KGHiLrRh6ERK2OAOu7OFkK8sCGE909VZl9SNqbeOa44tfn2wbVxtDB16XwXv6otsnVGuE7jKl75yuRgVbKsa2Psm04VhriYsvTDph5KAWiMbxYiBXI9rSI61bLeOeSpFjc08AtmZs7MsEVFKrgjRB5sCw3L9XLYnilRQLegIzOqCRWrPTzspia8uxMQ/s1600/42.png",
+            "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgDON3PgYd1PO1E22tvhDO_gUGMO7vAEmkmXMqy_rGTA_DJs2Es1DjZtOoapI5C1lgVz9i0uZoKj0BhsV7zstF1dFsk7wh5XvjCMBuKAbLnTSwpvXZ7IQKANRMsbM2Fm2W7JhxPFuiVg9PtJUeUENbMWNZBu-G5jMGnEMMwzJ-_mbcHfJPJOtGUYPKnAzI/s1600/43.png",
+            "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhHF3eAPcURJq4Kx3EpjBQ6csUn8aH8OhSi4hholjD9R42Zx1Og2dcDpbgJLm5NEpTPrYo_1w48SQtWphTn47Nr9unt6wrDzBYVcmiXvgwknQtGEHYny7msMYDDblp4uUebkjmpX0BElLwhIr7GZe1tA3Kua3L1P7ssA59P88SNIYMnt6pHtUSclGLjjrs/s1600/44.png",
+            "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEj2CD25u2yq8rG7ezmawtwTmvoPqFnrROSjaQRjZyPqRQU0FkCZ5MAB9eGTiFSjf2XjJlq9P5eL4ISYHnVX0TA7HCO7Ch4EMfSjMvJfCUYxB5XqKO4-TAxhv14bPYlWT3PAB2OJxWReqMkru2U03Q4K-pc_y6n52nQnHOdyaLgLhHfTCAlJJrVhAZtvl7Q/s1600/45.png",
+            "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEh7TOXlP4rTd9igmCUowLXdIt9zCwLzDOdwbq110s31t9KOKmGUQsOFwV-yb42pNnbFMGxmSL8peeEb3aEh8-NLhpaUBC3XVW4jgf921pi8oycAmKSP_iLKNp_inxgfhNwWu60rGqHMRdCrJ9TvoN2wIRm407YMfBOVAc0syM5iCQoAj7KJRdLOZlnFI8g/s1600/46.png",
+            "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjfwd8ZhyphenhyphenSdG6nBf9bAKcsU6gGJ7RLvzbd5wY4qTDn9r15rVChH0kybjBlsel1IdQCP3QsJHil9zz8ekFxqPEkSZorqob8JZi4_0EAXkS00MFT_sCDXyUv0yrZlPtnTS5d3h0AX3zF5gpS2nI3rh6p9NDBmV7iad4JSbzWwRCdXB2eWdiyWI0INaJJvHdg/s1600/47.png",
+            "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjLB0h-Tm3FlkK3eggI25B18KQ7y9MaKkc9v8Pypy8amvNLe5_WHyynuhKiq26UKGWphcJFHP_W2kpQyFKfiFrcib-PDeu-0jzGLHqZGlnrcLAELDkC2nV36zSFkbPGCFFoydmxHV6zmvPCEqjIVMLqdZFnbzoyP0OIXrDpH3pRNOaS_h62PTExuxf2mx8/s1600/48.png",
+            "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgyYoBf8FD4wutBd6Lsxna6_bLdWE3YsAyLxMXN0URWZ_n7i-dN8_0h1pBvlQAwTf6iFOFFgDcmjLeUqThEuIS6S3ypqq9QRUH3jbLrEqaIbgetbnm69pyaxKLFW1hbsdyP9dXV2G7mbbPBYdJDOR_H_Ug17SFY7gNRfw_HkqN4DSA5TgnhA2ilZQFL-PY/s1600/49.png",
+            "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiOe6xwTzFc5tiboQWTu7QUbaknr-t_rY51SuPrznyhyxhUpXnzoLufX6ZBLXFVKOWVs9-0FgaZArgFmOqrUaTxqt1yzHEgEwMdoWom6BvMbIeEN7Nn3VcUzeBRcQFtVMXZ7nETpJcDXE3Prw5qI7ANKB5jVoitZLxMbJVbRBDC8EHopl9kX5FIVvFuVAE/s1600/50.png"
+        ];
+        const loadedDuckImages = [];
+        duckImagesUrls.forEach(url => {
+            const img = new Image();
+            img.src = url;
+            loadedDuckImages.push(img);
+        });
+
+        // --- Canvas Setup ---
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            if(state.gameState === 'idle') initDucks();
+        }
+        window.addEventListener('resize', resizeCanvas);
+
+        function drawBackground() {
+            // Căn chỉnh mặt nước và bờ sông khớp nhau hoàn hảo
+            const waterY = canvas.height * 0.28; 
+
+            // Vẽ ảnh nền bờ sông trượt theo Camera (Giữ đúng tỷ lệ khung hình)
+            if (bankImg.complete && bankImg.naturalWidth > 0) {
+                const targetH = waterY; 
+                const scale = bankImg.width / bankImg.height;
+                const targetW = targetH * scale;
+
+                // Parallax nhẹ cho bờ sông (trượt chậm hơn vịt)
+                const startBgX = -(state.cameraX * 0.8 % targetW) - targetW;
+                for (let i = startBgX; i < canvas.width + targetW; i += targetW) {
+                    // Cộng thêm 1px vào chiều rộng để chống lỗi kẻ sọc (subpixel gap)
+                    ctx.drawImage(bankImg, Math.floor(i), 0, Math.ceil(targetW) + 1, Math.ceil(targetH));
+                }
+            } else {
+                ctx.fillStyle = '#00b100';
+                ctx.fillRect(0, 0, canvas.width, waterY);
+            }
+
+            // Gradient của Nước bắt đầu chính xác từ waterY (Sử dụng hai mã màu #1FA0EF và #1D93EA làm chủ đạo)
+            const grad = ctx.createLinearGradient(0, waterY, 0, canvas.height * 2);
+            grad.addColorStop(0, '#1FA0EF'); // Ngọc lam rực rỡ
+            grad.addColorStop(0.5, '#1D93EA'); // Màu biển tươi sáng chuẩn chỉ
+            grad.addColorStop(1, '#116ca3'); // Màu đậm sâu chân thật
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, waterY, canvas.width, canvas.height * 3);
+
+            // Hiệu ứng Dòng sông gợn sóng trượt theo Camera (7 Lớp sóng êm đềm bồng bềnh)
+            const time = Date.now() * 0.0012; 
+            const waveConfigs = [
+                { y: 20, amp: 5, freq: 0.005, speed: 0.7, alpha: 0.12, parallax: 0.8 },
+                { y: 55, amp: 8, freq: 0.004, speed: -0.9, alpha: 0.15, parallax: 0.85 },
+                { y: 95, amp: 10, freq: 0.003, speed: 0.6, alpha: 0.16, parallax: 0.9 },
+                { y: 140, amp: 13, freq: 0.0035, speed: -1.1, alpha: 0.18, parallax: 0.95 },
+                { y: 195, amp: 16, freq: 0.0025, speed: 0.8, alpha: 0.20, parallax: 1.0 },
+                { y: 260, amp: 19, freq: 0.002, speed: -0.6, alpha: 0.22, parallax: 1.05 },
+                { y: 340, amp: 23, freq: 0.0018, speed: 1.0, alpha: 0.24, parallax: 1.1 }
+            ];
+
+            waveConfigs.forEach(w => {
+                const drawY = waterY + w.y;
+                if (drawY - w.amp > canvas.height * 3) return; // Không vẽ nếu nằm ngoài màn hình
+                ctx.fillStyle = `rgba(255, 255, 255, ${w.alpha})`;
+                ctx.beginPath();
+                ctx.moveTo(0, drawY);
+                for(let i = 0; i <= canvas.width; i += 70) {
+                    const worldX = i + state.cameraX * w.parallax;
+                    ctx.lineTo(i, drawY + Math.sin(worldX * w.freq + time * w.speed) * w.amp);
+                }
+                ctx.lineTo(canvas.width, canvas.height * 3);
+                ctx.lineTo(0, canvas.height * 3);
+                ctx.fill();
+            });
+
+            // Vẽ Vạch Xuất Phát (Start Line) - CHỈ vẽ trên sông, KHÔNG lấn ra bờ
+            const startScreenX = START_X - state.cameraX;
+            if (startScreenX > -200 && startScreenX < canvas.width + 200) {
+                ctx.save();
+                ctx.transform(1, 0, -0.3, 1, 0, 0); // Làm chéo 3D
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.7)';
+                ctx.lineWidth = 6;
+                ctx.setLineDash([20, 15]);
+                ctx.beginPath();
+                // Bắt đầu từ waterY và chạy dọc xuống dưới lòng sông
+                ctx.moveTo(startScreenX, waterY);
+                ctx.lineTo(startScreenX, canvas.height * 3);
+                ctx.stroke();
+                ctx.restore();
+            }
+
+            // Vẽ Vạch Đích (Finish Line) - CHỈ vẽ trên sông, KHÔNG lấn ra bờ
+            const finishScreenX = currentRaceDist - state.cameraX;
+            if (finishScreenX > -200 && finishScreenX < canvas.width + 200) {
+                drawFinishLine(finishScreenX, waterY);
+            }
+        }
+
+        function drawFinishLine(screenX, waterY) {
+            const cols = 2; 
+            const tileSize = 20; // Vạch đích to hơn một chút để tương xứng với vịt bự
+            const w = cols * tileSize;
+            ctx.save();
+            ctx.transform(1, 0, -0.3, 1, 0, 0); // Làm chéo 3D
+            
+            // Vẽ sọc caro xen kẽ đen trắng chỉ nằm trong lòng sông (Bắt đầu từ waterY)
+            for (let y = waterY; y < canvas.height * 3; y += tileSize) {
+                for (let c = 0; c < cols; c++) {
+                    const row = Math.floor(y / tileSize);
+                    ctx.fillStyle = (row + c) % 2 === 0 ? 'white' : 'black';
+                    ctx.fillRect(screenX + (c * tileSize), y, tileSize, tileSize);
+                }
+            }
+
+            // Vẽ 2 cột cờ đích (Cột cờ cũng chỉ xuất phát từ waterY trở xuống)
+            ctx.fillStyle = '#cc0000';
+            ctx.fillRect(screenX - 6, waterY, 6, canvas.height * 3);
+            ctx.fillRect(screenX + w, waterY, 6, canvas.height * 3);
+
+            // Lá cờ vàng đặt tại ngay điểm bắt đầu trên sông (mép nước)
+            ctx.fillStyle = '#ffcc00';
+            ctx.beginPath();
+            ctx.moveTo(screenX - 6, waterY);
+            ctx.lineTo(screenX - 25, waterY + 8);
+            ctx.lineTo(screenX - 6, waterY + 16);
+            ctx.fill();
+
+            ctx.beginPath();
+            ctx.moveTo(screenX + w + 6, waterY);
+            ctx.lineTo(screenX + w + 25, waterY + 8);
+            ctx.lineTo(screenX + w + 6, waterY + 16);
+            ctx.fill();
+
+            ctx.restore();
+        }
+
+        // --- Hàm vẽ vịt vector dự phòng khi ảnh bị lỗi (Broken Image) ---
+        function drawFallbackVectorDuck(ctxObj) {
+            ctxObj.save();
+            
+            // Thân vịt (Màu vàng rực rỡ)
+            ctxObj.fillStyle = '#FFEB3B'; 
+            ctxObj.strokeStyle = '#212121';
+            ctxObj.lineWidth = 3;
+            ctxObj.beginPath();
+            ctxObj.ellipse(0, 5, 26, 18, 0, 0, Math.PI * 2);
+            ctxObj.fill();
+            ctxObj.stroke();
+
+            // Đầu vịt (Tròn xinh xắn)
+            ctxObj.beginPath();
+            ctxObj.arc(16, -14, 13, 0, Math.PI * 2);
+            ctxObj.fill();
+            ctxObj.stroke();
+
+            // Mắt vịt (Chấm đen dễ thương)
+            ctxObj.fillStyle = '#212121';
+            ctxObj.beginPath();
+            ctxObj.arc(20, -17, 2.5, 0, Math.PI * 2);
+            ctxObj.fill();
+
+            // Mỏ vịt (Màu cam nổi bật)
+            ctxObj.fillStyle = '#FF9800';
+            ctxObj.beginPath();
+            ctxObj.moveTo(28, -16);
+            ctxObj.lineTo(39, -12);
+            ctxObj.lineTo(28, -8);
+            ctxObj.closePath();
+            ctxObj.fill();
+            ctxObj.stroke();
+
+            // Cánh vịt (Dạng Elip cách điệu)
+            ctxObj.fillStyle = '#FFC107';
+            ctxObj.beginPath();
+            ctxObj.ellipse(-6, 5, 12, 8, -Math.PI / 8, 0, Math.PI * 2);
+            ctxObj.fill();
+            ctxObj.stroke();
+
+            ctxObj.restore();
+        }
+
+        function drawDuck(ctxObj, x, y, size, imgObj, label, showNum, duckId, rank) {
+            ctxObj.save();
+            ctxObj.translate(x, y);
+            ctxObj.scale(size, size);
+
+            const imgW = 80; 
+            const imgH = 80;
+
+            // Kiểm tra an toàn: Nếu ảnh đã tải hoàn tất và có kích thước tự nhiên hợp lệ (> 0) thì vẽ ảnh
+            if (imgObj && imgObj.complete && imgObj.naturalWidth > 0) {
+                ctxObj.drawImage(imgObj, -imgW/2, -imgH/2, imgW, imgH);
+            } else {
+                // FALLBACK: Vẽ vịt vector xinh xắn nếu ảnh hỏng / chưa kịp load
+                drawFallbackVectorDuck(ctxObj);
+            }
+
+            ctxObj.restore();
+
+            // Vẽ tùy chọn số thứ tự tròn nhỏ cạnh chú vịt sắc nét nếu được bật trong cài đặt
+            if (showNum && !rank) {
+                ctxObj.save();
+                ctxObj.translate(x - 30, y + 15); // Canh lề phía sau chú vịt một chút
+                
+                // Vẽ vòng tròn nền trắng viền đen
+                ctxObj.fillStyle = 'white';
+                ctxObj.strokeStyle = '#000000';
+                ctxObj.lineWidth = 2;
+                ctxObj.beginPath();
+                ctxObj.arc(0, 0, 11, 0, Math.PI * 2);
+                ctxObj.fill();
+                ctxObj.stroke();
+                
+                // Vẽ số thứ tự
+                ctxObj.fillStyle = '#000000';
+                ctxObj.font = 'bold 12px Arial';
+                ctxObj.textAlign = 'center';
+                ctxObj.textBaseline = 'middle';
+                ctxObj.fillText(duckId, 0, 0);
+                
+                ctxObj.restore();
+            }
+
+            // Chỉ hiển thị bong bóng danh hiệu xếp hạng khi vịt về đích Top 1, 2, 3
+            if (rank && rank <= 3 && ctxObj === ctx) {
+                ctxObj.save();
+                // Đặt bong bóng xếp hạng ở vị trí cao hơn (y - size * 75) để không đè lên bóng tên
+                ctxObj.translate(x, y - size * 75);
+                
+                let badgeColor = '#ffffff';
+                let textColor = '#000000';
+                let rankText = `TOP ${rank}`;
+                let emoji = '🏆';
+                
+                if (rank === 1) {
+                    badgeColor = '#FFD700'; // Vàng
+                    textColor = '#000000';
+                    emoji = '👑';
+                } else if (rank === 2) {
+                    badgeColor = '#C0C0C0'; // Bạc
+                    textColor = '#000000';
+                    emoji = '🥈';
+                } else if (rank === 3) {
+                    badgeColor = '#CD7F32'; // Đồng
+                    textColor = '#ffffff';
+                    emoji = '🥉';
+                }
+                
+                // Vẽ khung bong bóng
+                ctxObj.fillStyle = badgeColor;
+                ctxObj.strokeStyle = '#000000';
+                ctxObj.lineWidth = 3;
+                
+                let boxW = 85;
+                let boxH = 26;
+                ctxObj.beginPath();
+                ctxObj.roundRect(-boxW/2, -boxH/2, boxW, boxH, 8);
+                ctxObj.fill();
+                ctxObj.stroke();
+                
+                // Mũi nhọn bong bóng trỏ xuống
+                ctxObj.fillStyle = badgeColor;
+                ctxObj.beginPath();
+                ctxObj.moveTo(-6, boxH/2);
+                ctxObj.lineTo(0, boxH/2 + 6);
+                ctxObj.lineTo(6, boxH/2);
+                ctxObj.fill();
+                ctxObj.stroke();
+                
+                // Chữ xếp hạng
+                ctxObj.fillStyle = textColor;
+                ctxObj.font = 'bold 12px Inter, sans-serif';
+                ctxObj.textAlign = 'center';
+                ctxObj.textBaseline = 'middle';
+                ctxObj.fillText(`${emoji} ${rankText}`, 0, 0);
+                
+                ctxObj.restore();
+            }
+
+            // Bong bóng hiển thị tên (Luôn hiển thị khi cài đặt bật, KHÔNG ẩn khi về đích)
+            if (state.mode === 'names' && state.showNames && label && isNaN(label) && ctxObj === ctx) {
+                ctxObj.save();
+                ctxObj.translate(x, y - size * 45); 
+                
+                ctxObj.fillStyle = 'white';
+                ctxObj.strokeStyle = 'black';
+                ctxObj.lineWidth = 2;
+                ctxObj.font = 'bold 14px Inter';
+                
+                const textWidth = ctxObj.measureText(label).width;
+                const boxW = textWidth + 16;
+                const boxH = 24;
+
+                ctxObj.beginPath();
+                ctxObj.roundRect(-boxW/2, -boxH/2, boxW, boxH, 6);
+                ctxObj.fill(); ctxObj.stroke();
+                
+                ctxObj.beginPath();
+                ctxObj.moveTo(-5, boxH/2);
+                ctxObj.lineTo(-10, boxH/2 + 8);
+                ctxObj.lineTo(5, boxH/2);
+                ctxObj.fill(); ctxObj.stroke();
+
+                ctxObj.fillStyle = 'black';
+                ctxObj.textAlign = 'center';
+                ctxObj.textBaseline = 'middle';
+                ctxObj.fillText(label, 0, 0);
+                
+                ctxObj.restore();
+            }
+        }
+
+        // --- Class Vịt Đua ---
+        class Duck {
+            constructor(id, name, yPos, imgObj, totalDucks, rowIndex) {
+                this.id = id;
+                this.name = name;
+                this.y = yPos;
+                this.imgObj = imgObj;
+                
+                this.size = totalDucks > 500 ? 0.45 : (totalDucks > 200 ? 0.6 : (totalDucks > 50 ? 0.9 : (totalDucks > 20 ? 1.2 : 1.6)));
+                
+                // Thay đổi khoảng cách hàng dọc tại vạch xuất phát: cách nhau nửa thân vịt (40 * size)
+                let rowSpacing = 40 * this.size;
+                this.startX = START_X - (this.y * 0.3) - 40 - (rowIndex * rowSpacing);
+                this.x = this.startX; // Đứng thẳng hàng hoàn toàn lúc ban đầu
+                
+                this.speed = 0;
+                this.baseSpeed = 0.8; // Bơi mặc định chậm rãi tự nhiên
+                this.phase = Math.random() * Math.PI * 2; 
+                this.finished = false;
+                this.rank = null;     // Thứ hạng về đích cá nhân (1, 2, 3...)
+                
+                this.laneOffset = (Math.random() - 0.5) * 80; // Giãn cách riêng biệt của từng con để không bám quá sát nhau
+                
+                this.lastSpeedChange = 0;
+                this.speedChangeInterval = Math.random() * 2000;
+                this.targetOffset = 0;
+                this.currentOffset = 0;
+                this.targetSpeed = 0.8; 
+                this.finalBurstMode = false; // Chế độ lội ngược dòng bất ngờ cuối trận
+            }
+
+            update() {
+                if (state.gameState === 'idle') return;
+
+                // Tọa độ vạch đích (đã tính độ lệch chéo y)
+                const finishLineLocal = currentRaceDist - (this.y * 0.3); 
+
+                // Xử lý chạm đích (Xếp hạng)
+                if (!this.finished && this.x > finishLineLocal) {
+                    this.finished = true;
+                    state.finishRankCounter++;
+                    this.rank = state.finishRankCounter; // Gán thứ hạng về đích
+                    
+                    // HIỆU ỨNG TÁCH ĐÀN: Tăng tốc rõ rệt khi cán đích để tách khỏi đám vịt chưa về đích
+                    this.finishSpeed = 3.2; 
+                    
+                    if (!state.winnerChosen) {
+                        state.winnerChosen = true;
+                        state.winningDuck = this; 
+                        handleFinish(this);
+                    }
+                }
+
+                if (this.x > currentRaceDist + canvas.width + 1000) return;
+
+                if (this.finished) {
+                    // Đã qua đích: Tiếp tục bơi nhanh để bứt phá hẳn khỏi đàn vịt phía sau
+                    this.speed = this.finishSpeed + Math.sin(Date.now() / 250 + this.phase) * 0.1;
+                    this.x += this.speed;
+                    return; 
+                }
+
+                if (state.isCountdown) {
+                    let timeElapsed = Date.now() - state.startTime;
+                    // Đảm bảo progress chuẩn xác dựa trên thời gian thực đã trôi qua
+                    let progress = timeElapsed / state.targetTimeMillis; 
+                    if (progress > 1.0) progress = 1.0;
+                    if (progress < 0) progress = 0;
+                    let totalDist = finishLineLocal - this.startX;
+
+                    // Chạy chậm rãi tự nhiên từ đầu đến cuối mà không có bứt tốc 5s đầu
+                    if (Date.now() - this.lastSpeedChange > this.speedChangeInterval) {
+                        // Cơ hội ngẫu nhiên hoán đổi vị trí tà tà chậm rãi
+                        let rand = Math.random();
+                        if (rand < 0.12) { 
+                            this.targetOffset = (Math.random() - 0.5) * 500; // Hoán đổi khoảng vừa phải
+                        } else {
+                            this.targetOffset = (Math.random() - 0.5) * 180; 
+                        }
+                        this.lastSpeedChange = Date.now();
+                        this.speedChangeInterval = 1800 + Math.random() * 2500; 
+                    }
+
+                    // LỘI NGƯỢC DÒNG (NƯỚC RÚT - Khi tiến trình > 80%)
+                    if (progress > 0.8 && !this.finalBurstMode) {
+                        this.finalBurstMode = true;
+                        // Nếu đang ở tốp sau thì 35% cơ hội bứt phá hoán đổi ngoạn mục
+                        if (this.currentOffset < 0 && Math.random() < 0.35) {
+                            this.targetOffset = 300 + Math.random() * 300; 
+                            this.speedChangeInterval = 10000; 
+                        }
+                    }
+                    
+                    // Lerp gia tốc cực nhẹ (0.008) giúp chuyển động bơi hoán đổi mượt mà, thong thả
+                    this.currentOffset += (this.targetOffset - this.currentOffset) * 0.008;
+
+                    // Thu hẹp khoảng cách quy tụ về chung 1 tốp ở vạch đích
+                    let convergeFactor = 1.0;
+                    if (progress > 0.85) {
+                        convergeFactor = (1.0 - progress) / 0.15; 
+                    }
+
+                    let idealX = this.startX + totalDist * progress;
+                    let nextX = idealX + (this.currentOffset * convergeFactor) + this.laneOffset;
+
+                    let desiredSpeed = nextX - this.x;
+                    // Gia tốc mềm mại
+                    this.speed += (desiredSpeed - this.speed) * 0.05; 
+                    
+                    if (this.speed < 0.2) this.speed = 0.2; // Luôn bơi thong thả tiến lên
+                    this.x += this.speed;
+
+                } else {
+                    // Chế độ đua tự do (không hẹn giờ) - Tốc độ nhẹ nhàng, thư giãn
+                    if (Date.now() - this.lastSpeedChange > this.speedChangeInterval) {
+                        let rand = Math.random();
+                        if (rand < 0.1) {
+                            this.targetSpeed = 1.0 + Math.random() * 0.5; 
+                        } else if (rand < 0.2) {
+                            this.targetSpeed = 0.3 + Math.random() * 0.2; 
+                        } else {
+                            this.targetSpeed = 0.6 + Math.random() * 0.3; 
+                        }
+                        this.lastSpeedChange = Date.now();
+                        this.speedChangeInterval = 2000 + Math.random() * 3000;
+                    }
+                    this.baseSpeed += (this.targetSpeed - this.baseSpeed) * 0.01; 
+                    this.speed = this.baseSpeed;
+                    this.x += this.speed;
+                }
+            }
+
+            draw() {
+                const bobOffset = Math.sin(Date.now() / 200 + this.phase) * 4;
+                const label = state.mode === 'names' ? this.name : this.id;
+                
+                // Tọa độ vẽ trên màn hình = Tọa độ thế giới (worldX) - CameraX
+                const screenX = this.x - state.cameraX;
+                
+                // Culling: Chỉ vẽ những con nằm trong khu vực màn hình
+                if (screenX > -150 && screenX < canvas.width + 150) {
+                    drawDuck(ctx, screenX, this.y + bobOffset, this.size, this.imgObj, label, state.showNumbers, this.id, this.rank);
+                }
+            }
+        }
+
+        // --- Khởi tạo đàn vịt (Xếp thành hàng tối đa 15 con) ---
+        function initDucks() {
+            state.ducks = [];
+            state.winningDuck = null; 
+            state.finishRankCounter = 0; // Reset bộ đếm xếp hạng
+            
+            let count = state.mode === 'names' ? state.namesList.length : state.numDucks;
+            if (count > 1000) count = 1000; 
+
+            // Đẩy đàn vịt xuống thấp hơn một chút để lấp đầy mặt nước
+            const startY = canvas.height * 0.35; 
+            const endY = canvas.height * 0.95;
+
+            const maxDucksPerRow = 15;
+            let effectiveRowSize = Math.min(count, maxDucksPerRow);
+
+            for (let i = 0; i < count; i++) {
+                const name = state.mode === 'names' ? state.namesList[i] : `Duck ${i+1}`;
+                
+                // Đảm bảo chỉ dùng và lặp lại tuần tự trong danh sách 50 ảnh gốc, không dùng ảnh nào khác ngoài 50 link này
+                const imgObj = loadedDuckImages[i % Math.min(50, loadedDuckImages.length)];
+                
+                let rowIndex = Math.floor(i / maxDucksPerRow);
+                let colIndex = i % maxDucksPerRow;
+
+                let y = startY;
+                if(effectiveRowSize > 1) {
+                    y = startY + (colIndex * ((endY - startY) / (effectiveRowSize - 1)));
+                } else {
+                    y = (startY + endY) / 2;
+                }
+
+                // Thêm chút lệch ngẫu nhiên siêu nhỏ để trông bầy vịt tự nhiên sinh động, không bị đơ cứng hàng lối
+                y += (Math.random() * 10 - 5);
+                
+                state.ducks.push(new Duck(i + 1, name, y, imgObj, count, rowIndex));
+            }
+
+            // Tính toán cameraX ở trạng thái chờ sao cho căn giữa toàn bộ lưới xuất phát (với khoảng cách hàng dọc mới là 40 * size)
+            let sizeSample = count > 500 ? 0.45 : (count > 200 ? 0.6 : (count > 50 ? 0.9 : (count > 20 ? 1.2 : 1.6)));
+            let rowSpacingSample = 40 * sizeSample;
+            let numRows = Math.ceil(count / maxDucksPerRow);
+            let gridWidth = (numRows - 1) * rowSpacingSample;
+            let gridCenterX = START_X - gridWidth / 2;
+
+            state.cameraX = gridCenterX - window.innerWidth / 2; 
+            state.zoom = 1;
+            state.focusY = window.innerHeight / 2;
+        }
+
+        function shuffleDucks() {
+            if(state.gameState !== 'idle') return;
+            if(state.mode === 'names') {
+                state.namesList.sort(() => Math.random() - 0.5);
+            }
+            initDucks();
+        }
+
+        function pressKey(num) {
+            keypadInputStr += num.toString();
+            if(keypadInputStr.length > 6) {
+                keypadInputStr = keypadInputStr.slice(-6);
+            }
+            updateSettingsTimerDisplay();
+        }
+
+        function clearKeypad() {
+            keypadInputStr = "000000";
+            updateSettingsTimerDisplay();
+        }
+
+        function updateSettingsTimerDisplay() {
+            let h = keypadInputStr.slice(0, 2);
+            let m = keypadInputStr.slice(2, 4);
+            let s = keypadInputStr.slice(4, 6);
+            document.getElementById('settingsTimerText').textContent = `${h}:${m}:${s}`;
+        }
+
+        function setTargetTime() {
+            let h = parseInt(keypadInputStr.slice(0, 2), 10);
+            let m = parseInt(keypadInputStr.slice(2, 4), 10);
+            let s = parseInt(keypadInputStr.slice(4, 6), 10);
+            state.targetTimeMillis = (h * 3600 + m * 60 + s) * 1000;
+            
+            if(state.targetTimeMillis > 0) {
+                state.isCountdown = true;
+                state.timerMillis = state.targetTimeMillis;
+                
+                // QUAN TRỌNG: Quãng đường đua động tương ứng với thời gian để giữ vận tốc bơi chậm mượt ổn định.
+                currentRaceDist = START_X + Math.max(1200, (state.targetTimeMillis / 1000) * 60 * 0.8);
+            } else {
+                state.isCountdown = false;
+                state.timerMillis = 0;
+                currentRaceDist = START_X + 8000; // Đua tự do mặc định đường dài
+            }
+            
+            updateMainTimerDisplay();
+
+            if (state.isSettingsOpen && state.gameState === 'idle') {
+                toggleSettings();
+            }
+        }
+
+        function updateMainTimerDisplay() {
+            let ms = Math.max(0, state.timerMillis);
+            let totalSec = Math.floor(ms / 1000);
+            let h = Math.floor(totalSec / 3600).toString().padStart(2, '0');
+            let m = Math.floor((totalSec % 3600) / 60).toString().padStart(2, '0');
+            let s = (totalSec % 60).toString().padStart(2, '0');
+            document.getElementById('timerDisplay').textContent = `${h}:${m}:${s}`;
+        }
+
+        // --- Vòng lặp Render (Game Loop) ---
+        function animate(timestamp) {
+            
+            // Cập nhật Camera (Không thay đổi tỷ lệ phóng to đột ngột khi cán đích)
+            if (state.gameState === 'idle') {
+                // Ở trạng thái chờ, camera luôn khóa cứng ở giữa toàn bộ lưới xuất phát Grid
+                let count = state.mode === 'names' ? state.namesList.length : state.numDucks;
+                if (count > 1000) count = 1000;
+                const maxDucksPerRow = 15;
+                let sizeSample = count > 500 ? 0.45 : (count > 200 ? 0.6 : (count > 50 ? 0.9 : (count > 20 ? 1.2 : 1.6)));
+                let rowSpacingSample = 40 * sizeSample;
+                let numRows = Math.ceil(count / maxDucksPerRow);
+                let gridWidth = (numRows - 1) * rowSpacingSample;
+                let gridCenterX = START_X - gridWidth / 2;
+
+                state.cameraX = gridCenterX - canvas.width / 2;
+                state.zoom += (1 - state.zoom) * 0.1;
+                state.focusY += (canvas.height / 2 - state.focusY) * 0.1;
+            } else if (state.gameState === 'racing' || state.gameState === 'finished') {
+                let targetCameraX;
+                let targetZoom = 1; // Giữ nguyên mức hiển thị trực quan, không zoom đột ngột
+                let targetFocusY = canvas.height / 2;
+
+                if (state.gameState === 'finished' && state.winningDuck) {
+                    // Khi có người thắng cuộc, camera bám theo con vịt chiến thắng vào giữa khung hình nhưng không phóng to
+                    targetCameraX = state.winningDuck.x - canvas.width / 2;
+                } else {
+                    // Khi đang đua, đưa leader vào trung tâm khung hình
+                    let leaderX = 0;
+                    if (state.ducks.length > 0) {
+                        leaderX = Math.max(...state.ducks.map(d => d.x));
+                    }
+                    targetCameraX = leaderX - canvas.width * 0.45; 
+                }
+                
+                if (targetCameraX < 0) targetCameraX = 0;
+                
+                // Trượt camera mượt mà (Lerp 0.02 êm ái hơn)
+                state.cameraX += (targetCameraX - state.cameraX) * 0.02; 
+                state.zoom += (targetZoom - state.zoom) * 0.02;
+                state.focusY += (targetFocusY - state.focusY) * 0.02;
+            }
+
+            // Xóa toàn bộ màn hình thực tế để chuẩn bị vẽ (Tránh lưu ảnh cũ)
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            ctx.save();
+            // Áp dụng ma trận biến đổi cho hiệu ứng camera mượt mà
+            if (state.zoom !== 1 || state.focusY !== canvas.height / 2) {
+                ctx.translate(canvas.width / 2, canvas.height / 2);
+                ctx.scale(state.zoom, state.zoom);
+                ctx.translate(-canvas.width / 2, -state.focusY);
+            }
+
+            drawBackground();
+            
+            // Sắp xếp vẽ (Y sort)
+            state.ducks.sort((a,b) => a.y - b.y);
+
+            state.ducks.forEach(duck => {
+                duck.update();
+                duck.draw();
+            });
+
+            ctx.restore();
+
+            if(state.gameState === 'racing') {
+                if (Math.random() < 0.008) playSound('quack'); // Random tiếng vịt kêu thưa thớt dễ chịu
+
+                // Cập nhật đếm ngược chuẩn xác dựa trên thời gian đích thực tế
+                if (state.isCountdown) {
+                    state.timerMillis = state.endTime - Date.now();
+                    if (state.timerMillis <= 0) {
+                        state.timerMillis = 0;
+                    }
+                } else {
+                    state.timerMillis = Date.now() - state.startTime;
+                }
+                updateMainTimerDisplay();
+            }
+
+            requestAnimationFrame(animate);
+        }
+
+        // --- Logic Điều khiển Game ---
+        function toggleRace() {
+            if (state.gameState === 'idle') {
+                playSound('horn'); // Phát còi xuất phát
+                state.gameState = 'racing';
+                
+                // Giải quyết triệt để lỗi thời gian đếm ngược bị lệch khi tạm dừng rồi tiếp tục
+                if (state.isCountdown) {
+                    state.startTime = Date.now() - (state.targetTimeMillis - state.timerMillis);
+                    state.endTime = state.startTime + state.targetTimeMillis;
+                } else {
+                    state.startTime = Date.now() - state.timerMillis;
+                }
+                document.getElementById('startBtn').textContent = 'Pause';
+                
+                if (state.isSettingsOpen) toggleSettings(); 
+            } else if (state.gameState === 'racing') {
+                state.gameState = 'idle';
+                document.getElementById('startBtn').textContent = 'Resume';
+            } else if (state.gameState === 'finished') {
+                resetRace();
+                toggleRace(); 
+            }
+        }
+
+        function resetRace() {
+            if (state.winnerTimeout) {
+                clearTimeout(state.winnerTimeout);
+                state.winnerTimeout = null;
+            }
+            state.gameState = 'idle';
+            state.winnerChosen = false;
+            state.finishRankCounter = 0; // Reset bộ đếm thứ hạng
+            if(state.isCountdown) {
+                state.timerMillis = state.targetTimeMillis;
+            } else {
+                state.timerMillis = 0;
+            }
+            updateMainTimerDisplay();
+            document.getElementById('startBtn').textContent = 'Start';
+            initDucks();
+        }
+
+        function handleFinish(winningDuck) {
+            state.gameState = 'finished'; // Game vẫn chạy nền
+            playSound('cheer'); // Phát tiếng reo hò chiến thắng
+            document.getElementById('startBtn').textContent = 'Start';
+            
+            // Delay hiển thị pop-up 3.5 giây để camera kịp bám theo vịt cán đích tự nhiên
+            state.winnerTimeout = setTimeout(() => {
+                showWinnerModal(winningDuck);
+            }, 3500);
+        }
+
+        function showWinnerModal(winningDuck) {
+            document.getElementById('winnerText').textContent = state.mode === 'names' ? winningDuck.name : `Number ${winningDuck.id}`;
+            
+            const wCtx = document.getElementById('winnerDuckCanvas').getContext('2d');
+            wCtx.clearRect(0,0,200,200);
+            drawDuck(wCtx, 100, 130, 2, winningDuck.imgObj, null, false, winningDuck.id, winningDuck.rank);
+
+            const modal = document.getElementById('winnerModal');
+            const content = document.getElementById('winnerContent');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            setTimeout(() => {
+                content.classList.remove('scale-0');
+                content.classList.add('scale-100');
+            }, 50);
+        }
+
+        // Đóng modal hoàn toàn và khởi chạy game mới
+        function closeWinnerModal() {
+            const modal = document.getElementById('winnerModal');
+            const content = document.getElementById('winnerContent');
+            content.classList.remove('scale-100');
+            content.classList.add('scale-0');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+                resetRace();
+                toggleSettings();
+            }, 300);
+        }
+
+        // Chỉ đóng (X) Popup để giữ trạng thái đường đua cho người chơi xem
+        function dismissWinnerModalOnly() {
+            const modal = document.getElementById('winnerModal');
+            const content = document.getElementById('winnerContent');
+            content.classList.remove('scale-100');
+            content.classList.add('scale-0');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            }, 300);
+        }
+
+        // --- Logic Tương tác UI Menu ---
+        function toggleSettings() {
+            if(state.gameState === 'racing') return;
+            
+            state.isSettingsOpen = !state.isSettingsOpen;
+            const overlay = document.getElementById('settingsOverlay');
+            if (state.isSettingsOpen) {
+                overlay.classList.remove('hidden');
+                overlay.classList.add('flex');
+            } else {
+                overlay.classList.add('hidden');
+                overlay.classList.remove('flex');
+                initDucks(); 
+            }
+        }
+
+        function switchTab(target) {
+            state.mode = target;
+            if (target === 'names') {
+                document.getElementById('tabNames').classList.replace('inactive', 'active');
+                document.getElementById('tabNumbers').classList.replace('active', 'inactive');
+                document.getElementById('contentNames').classList.remove('hidden');
+                document.getElementById('contentNumbers').classList.add('hidden');
+            } else {
+                document.getElementById('tabNumbers').classList.replace('inactive', 'active');
+                document.getElementById('tabNames').classList.replace('active', 'inactive');
+                document.getElementById('contentNumbers').classList.remove('hidden');
+                document.getElementById('contentNames').classList.add('hidden');
+            }
+        }
+
+        function updateSliderValue(val) {
+            let num = parseInt(val, 10);
+            if(isNaN(num) || num < 2) num = 2;
+            if(num > 1000) num = 1000; // Nâng giới hạn slider lên 1000
+            state.numDucks = num;
+            document.getElementById('duckCountSlider').value = num;
+            document.getElementById('duckCountInput').value = num;
+            document.getElementById('sliderValDisplay').textContent = num;
+        }
+
+        function toggleRaceNumbers() {
+            state.showNumbers = !state.showNumbers;
+            const btn = document.getElementById('toggleNumbersBtn');
+            if(state.showNumbers) {
+                btn.className = "fas fa-check-circle text-green-500 text-2xl cursor-pointer";
+            } else {
+                btn.className = "fas fa-times-circle text-red-600 text-2xl cursor-pointer";
+            }
+        }
+
+        function toggleRaceNames() {
+            state.showNames = !state.showNames;
+            const btn = document.getElementById('toggleNamesBtn');
+            if(state.showNames) {
+                btn.className = "fas fa-check-circle text-green-500 text-2xl cursor-pointer";
+            } else {
+                btn.className = "fas fa-times-circle text-red-600 text-2xl cursor-pointer";
+            }
+        }
+
+        function openNameEditor() {
+            document.getElementById('nameInputTextarea').value = state.namesList.join('\n');
+            updateEditorCount();
+            document.getElementById('nameEditorOverlay').classList.remove('hidden');
+            document.getElementById('nameEditorOverlay').classList.add('flex');
+            document.getElementById('nameInputTextarea').addEventListener('input', updateEditorCount);
+        }
+
+        function closeNameEditor() {
+            document.getElementById('nameEditorOverlay').classList.add('hidden');
+            document.getElementById('nameEditorOverlay').classList.remove('flex');
+            document.getElementById('nameInputTextarea').removeEventListener('input', updateEditorCount);
+        }
+
+        function updateEditorCount() {
+            const lines = document.getElementById('nameInputTextarea').value.split('\n').filter(l => l.trim() !== '');
+            document.getElementById('editorNameCount').textContent = Math.min(lines.length, 1000);
+        }
+
+        function saveNames() {
+            const rawLines = document.getElementById('nameInputTextarea').value.split('\n');
+            const newNames = [];
+            for(let line of rawLines) {
+                let trimmed = line.trim();
+                if(trimmed !== '') newNames.push(trimmed);
+                if(newNames.length >= 1000) break; // Giới hạn mảng tối đa 1000 cái tên
+            }
+            
+            state.namesList = newNames;
+            document.getElementById('nameCountDisplay').textContent = state.namesList.length;
+            closeNameEditor();
+        }
+
+        function clearNames() {
+            document.getElementById('nameInputTextarea').value = '';
+            updateEditorCount();
+        }
+
+        // --- Khởi động ứng dụng đua vịt ---
+        window.onload = () => {
+            resizeCanvas(); 
+            // Khởi tạo trạng thái mặc định an toàn cho 30 giây
+            state.targetTimeMillis = 30000;
+            state.timerMillis = 30000;
+            state.isCountdown = true;
+            currentRaceDist = START_X + Math.max(1200, (30000 / 1000) * 60 * 0.8);
+            
+            updateMainTimerDisplay(); // Khởi chạy hiển thị 30 giây mặc định
+            updateSettingsTimerDisplay(); // Khởi chạy hiển thị bàn phím số 30 giây
+            requestAnimationFrame(animate);
+        };
+
+    </script>
+</body>
+</html>
