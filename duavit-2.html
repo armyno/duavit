@@ -3,816 +3,2397 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Đua Vịt Trắc Nghiệm</title>
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@500;700&display=swap" rel="stylesheet">
-    
+    <title>Đua Vịt Trí Tuệ - Hệ Thống Học Tập</title>
+    <link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@500;700&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
+        :root {
+            --primary: #4f46e5;       
+            --primary-hover: #4338ca;
+            --secondary: #0ea5e9;     
+            --success: #10b981;       
+            --success-hover: #059669;
+            --danger: #f43f5e;        
+            --danger-hover: #e11d48;
+            --warning: #f59e0b;       
+            --bg: #eff6ff;            
+            --bg-card: #ffffff;
+            --text: #1e293b;          
+            --text-muted: #64748b;
+            --border: #e2e8f0;        
+            --border-focus: #cbd5e1;
+            --water-top: #1C92EA;     
+            --water-bottom: #22A2F0;
+        }
+
+        * { 
+            font-family: 'Nunito', 'Comfortaa', sans-serif; 
+            box-sizing: border-box; 
+            margin: 0; 
+            padding: 0;
+        }
+
         body {
-            font-family: 'Quicksand', sans-serif;
-            background-color: #f0f9ff;
-            color: #334155;
+            background-color: var(--bg); 
+            color: var(--text);
+            display: flex; 
+            justify-content: center; 
+            align-items: stretch;
+            min-height: 100vh; 
             overflow-x: hidden;
         }
-        /* Đường đua nước tối giản */
-        .water-track {
-            background-color: #38bdf8;
+
+        #app {
+            width: 100%; 
+            max-width: 1600px; 
+            background: var(--bg-card);
+            padding: 16px; 
+            text-align: left; 
             position: relative;
-            border-radius: 999px;
+            display: flex; 
+            flex-direction: column; 
+            min-height: 100vh;
+        }
+
+        h1, h2, h3, h4 { 
+            color: var(--text); 
+            font-weight: 900; 
+            margin-bottom: 12px; 
+            text-align: center; 
+        }
+
+        button, .btn {
+            background-color: var(--primary); 
+            color: white; 
+            border: none;
+            padding: 10px 20px;
+            font-size: 14px; 
+            font-weight: 800; 
+            border-radius: 8px; 
+            cursor: pointer; 
+            transition: all 0.2s ease;
+            display: inline-flex; 
+            justify-content: center; 
+            align-items: center; 
+            gap: 6px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        button:hover, .btn:hover { 
+            background-color: var(--primary-hover);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        button:active, .btn:active { 
+            transform: translateY(1px);
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        }
+        
+        .btn-danger { background-color: var(--danger); }
+        .btn-danger:hover { background-color: var(--danger-hover); }
+        .btn-secondary { background-color: var(--secondary); }
+        .btn-green { background-color: var(--success); }
+        .btn-green:hover { background-color: var(--success-hover); }
+        .btn-warning { background-color: var(--warning); }
+        
+        .btn-outline { 
+            background: transparent; 
+            color: var(--text-muted); 
+            border: 1.5px solid var(--border); 
+            box-shadow: none;
+        }
+        .btn-outline:hover { 
+            background: #f8fafc; 
+            color: var(--text);
+            border-color: var(--border-focus);
+        }
+        button:disabled { 
+            background-color: #cbd5e1 !important; 
+            color: #94a3b8 !important; 
+            cursor: not-allowed; 
+            transform: none !important;
+            box-shadow: none !important;
+        }
+
+        .sound-toggle-btn {
+            background: white;
+            border: 1.5px solid var(--border);
+            width: 32px;
+            height: 32px;
+            border-radius: 50% !important;
+            display: inline-flex !important;
+            justify-content: center !important;
+            align-items: center !important;
+            cursor: pointer;
+            font-size: 14px;
+            padding: 0 !important;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            transition: all 0.2s ease;
+        }
+        .sound-toggle-btn:hover {
+            border-color: var(--secondary);
+            background: #f0f9ff;
+            transform: scale(1.05);
+        }
+
+        input, textarea, select {
+            padding: 8px 12px; 
+            border: 1.5px solid var(--border); 
+            border-radius: 8px; 
+            font-size: 14px;
+            width: 100%; 
+            transition: all 0.2s; 
+            color: var(--text); 
+            background: #fff; 
+            height: 42px;
+        }
+        textarea { height: auto; resize: vertical; }
+        input:focus, textarea:focus, select:focus { 
+            outline: none; 
+            border-color: var(--secondary); 
+            box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.15);
+        }
+
+        .screen { display: none; animation: fadeIn 0.2s ease-out; flex: 1; flex-direction: column; }
+        .screen.active { display: flex; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+
+        @keyframes gentleFloat {
+            0% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-3px) rotate(1.5deg); }
+            100% { transform: translateY(0px) rotate(0deg); }
+        }
+        .floating-duck-gentle {
+            animation: gentleFloat 3.2s ease-in-out infinite;
+        }
+
+        .host-lobby-header {
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center;
+            background: #f8fafc; 
+            padding: 12px; 
+            border: 1.5px solid var(--border);
+            border-radius: 12px; 
+            margin-bottom: 15px; 
+            flex-wrap: wrap; 
+            gap: 10px; 
+            width: 100%;
+        }
+        .info-badge { 
+            background: white; 
+            padding: 6px 14px; 
+            font-weight: 800; 
+            border: 1.5px solid var(--border); 
+            border-radius: 8px; 
+            display: flex; 
+            align-items: center; 
+            gap: 8px; 
+            height: 42px;
+            font-size: 14px;
+        }
+        .info-badge strong { color: var(--secondary); font-weight: 900; }
+        
+        .lobby-layout { display: grid; grid-template-columns: 2fr 1fr; gap: 15px; flex: 1; text-align: left; min-height: 0;}
+        @media (max-width: 900px) { .lobby-layout { grid-template-columns: 1fr; } }
+        
+        .lobby-left, .lobby-right { 
+            background: #f8fafc; 
+            padding: 15px; 
+            border: 1.5px solid var(--border); 
+            border-radius: 12px; 
+            display: flex; 
+            flex-direction: column; 
+            overflow: hidden; 
+            height: 100%; 
+        }
+        
+        .player-list { 
+            display: flex; 
+            flex-wrap: wrap; 
+            gap: 10px; 
+            justify-content: flex-start; 
+            align-items: flex-start; 
+            overflow-y: auto; 
+            flex: 1; 
+            align-content: flex-start; 
+        }
+
+        .player-card {
+            background: white; 
+            padding: 10px; 
+            width: 105px; 
+            height: 130px; 
+            position: relative; 
+            border: 1.5px solid var(--border); 
+            border-radius: 12px; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            justify-content: center;
+            transition: border-color 0.2s;
+        }
+        .player-card.is-me { border-color: var(--secondary); background: #f0f9ff; }
+        .player-card img { 
+            width: 55px; 
+            height: 55px; 
+            object-fit: contain; 
+            animation: gentleFloat 3s ease-in-out infinite; 
+        }
+        .player-card span { 
+            display: block; 
+            font-weight: 800; 
+            font-size: 12px; 
+            white-space: nowrap; 
+            overflow: hidden; 
+            text-overflow: ellipsis; 
+            width: 100%; 
+            text-align: center; 
+            margin-top: 5px;
+            color: var(--text);
+        }
+        .status-text { font-size: 11px; font-weight: 800; margin-top: 2px; }
+        .status-text.ready { color: var(--success); }
+        .status-text.wait { color: var(--text-muted); }
+        
+        .kick-btn { 
+            position: absolute; 
+            top: -6px; 
+            right: -6px; 
+            background: var(--danger); 
+            color: white; 
+            border: none; 
+            width: 24px; 
+            height: 24px; 
+            min-width: 24px;
+            max-width: 24px;
+            min-height: 24px;
+            max-height: 24px;
+            border-radius: 50% !important; 
+            cursor: pointer; 
+            font-size: 11px; 
+            display: inline-flex !important; 
+            justify-content: center !important; 
+            align-items: center !important; 
+            padding: 0 !important;
+            margin: 0 !important;
+            line-height: 1;
+            z-index: 10;
+            opacity: 0;
+            transition: opacity 0.2s, transform 0.2s;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .player-card:hover .kick-btn { opacity: 1; }
+        .kick-btn:hover { transform: scale(1.1); background-color: var(--danger-hover); }
+
+        .duck-selector { display: grid; grid-template-columns: repeat(auto-fill, minmax(55px, 1fr)); gap: 8px; overflow-y: auto; flex: 1; padding: 2px;}
+        .duck-option { 
+            width: 100%; 
+            aspect-ratio: 1; 
+            padding: 4px; 
+            cursor: pointer; 
+            border: 1.5px solid var(--border); 
+            border-radius: 8px; 
+            background: white; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center;
+            transition: all 0.2s;
+        }
+        .duck-option:hover { border-color: var(--secondary); transform: scale(1.05); }
+        .duck-option img { 
+            width: 100%; 
+            height: 100%; 
+            object-fit: contain; 
+            animation: gentleFloat 2.8s ease-in-out infinite; 
+        }
+
+        .settings-container-direct { display: flex; flex-direction: column; gap: 15px; margin-top: 15px; text-align: left; }
+        .ui-card { background: white; border: 1.5px solid var(--border); border-radius: 12px; padding: 15px; }
+        .ui-card-title { 
+            display: flex; 
+            align-items: center; 
+            gap: 10px; 
+            font-size: 16px; 
+            font-weight: 800; 
+            color: var(--text); 
+            margin-bottom: 12px; 
+            border-bottom: 1.5px solid var(--border); 
+            padding-bottom: 6px; 
+        }
+        .form-label { font-weight: 700; margin-bottom: 4px; display: block; font-size: 13px; color: var(--text-muted);}
+
+        .q-table-wrap { overflow-x: auto; border: 1.5px solid var(--border); border-radius: 8px; background: white; max-height: 400px;}
+        table { width: 100%; border-collapse: collapse; min-width: 900px; }
+        th, td { padding: 8px; border-bottom: 1.5px solid var(--border); border-right: 1.5px solid var(--border); text-align: center; vertical-align: top; font-size: 13px;}
+        th { background: #f8fafc; font-weight: 700; color: var(--text-muted); position: sticky; top: 0; z-index: 5;}
+        td input, td select { padding: 6px; font-size: 13px; text-align: center; border: 1.5px solid var(--border); border-radius: 6px; background: #fff; height: 32px;}
+        td:first-child input { text-align: left; font-weight: 700;}
+        
+        .media-input-group { display: flex; gap: 4px; margin-top: 4px; align-items: stretch; height: 32px; }
+        .media-input-group input[type="text"] { height: 100%; margin: 0; font-size: 11px; padding: 0 8px; flex: 1; text-align: left;}
+        .media-input-group button { height: 100%; margin: 0; padding: 0 8px;}
+
+        .pool-viewport {
+            width: 100%; 
+            overflow: hidden; 
+            border: 1.5px solid var(--border); 
+            border-radius: 12px; 
+            margin-top: 5px; 
+            position: relative; 
+            flex: 1; 
+            min-height: 150px;
+        }
+        
+        #screen-host-game .pool-viewport {
+            height: 42vh;
+            flex: 0 0 42vh;
+            min-height: 240px;
+        }
+
+        #screen-player-game .pool-viewport {
+            height: 50vh;
+            flex: 0 0 50vh;
+            min-height: 250px;
+        }
+
+        .race-pool {
+            background: linear-gradient(180deg, var(--water-top) 0%, var(--water-bottom) 100%);
+            width: 2300px; 
+            height: 100%; 
+            position: relative;
+            transform: translateX(0px); 
+            transition: transform 0.8s cubic-bezier(0.25, 1, 0.5, 1);
             overflow: hidden;
-            box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
         }
-        .water-track::after {
-            content: '';
+
+        .water-waves {
+            position: absolute; bottom: 0; left: 0; width: 100%; height: 100%;
+            background-image: repeating-linear-gradient(
+                -45deg,
+                rgba(255, 255, 255, 0.05),
+                rgba(255, 255, 255, 0.05) 15px,
+                transparent 15px,
+                transparent 30px
+            );
+            background-size: 300px 300px;
+            animation: waveFlow 12s linear infinite; pointer-events: none; z-index: 1;
+        }
+        @keyframes waveFlow { 0% { background-position: 0 0; } 100% { background-position: -300px 300px; } }
+
+        .scenery-backdrop {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100px;
+            background-image: url('https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgx_QuGH4Ghog-6TyyaRfLhmLguBwuK7E2mb2sdvojiJqGZq7BIs2y_0hydHP3Fd6nZRHqoVDo09Gxi-NfLrc3l_AnQwB4cppyKqeEM7v2NXJohnq18Jd4zpcS0EL2pMEEk45lmmg9fjPLSXQXE7Plk7iwId_TVXaW3Y9LIhwGo1GgAQYSTmWdukYFW02U/s1600/398f0982-2021-4529-8f78-046940d14ab2.png');
+            background-size: auto 100%; background-repeat: repeat-x;
+            z-index: 2; border-bottom: 1.5px solid rgba(255,255,255,0.2);
+            animation: slightParallax 45s linear infinite alternate;
+        }
+        @keyframes slightParallax { from { background-position-x: 0; } to { background-position-x: -180px; } }
+
+        .start-line {
+            position: absolute; 
+            left: 350px; 
+            top: 100px; 
+            width: 8px; 
+            height: calc(100% - 100px); 
+            background: repeating-linear-gradient(0deg, #ffffff, #ffffff 6px, #000000 6px, #000000 12px); 
+            border-left: 1px solid #94a3b8;
+            border-right: 1px solid #94a3b8;
+            z-index: 3;
+        }
+
+        .finish-line { 
+            position: absolute; 
+            left: 1950px; 
+            top: 100px; 
+            width: 12px; 
+            height: calc(100% - 100px); 
+            background-image: 
+                linear-gradient(45deg, #000 25%, transparent 25%), 
+                linear-gradient(-45deg, #000 25%, transparent 25%), 
+                linear-gradient(45deg, transparent 75%, #000 75%), 
+                linear-gradient(-45deg, transparent 75%, #000 75%);
+            background-size: 6px 6px;
+            background-color: #fff;
+            z-index: 3; 
+            border-left: 1px solid #1e293b;
+            border-right: 1px solid #1e293b;
+        }
+
+        .swimmer-duck {
+            position: absolute; 
+            width: 86px; 
+            height: 86px; 
+            transition: left 4.5s cubic-bezier(0.2, 0.8, 0.2, 1), top 0.8s ease-in-out, opacity 0.5s ease-out;
+        }
+        .swimmer-duck img { 
+            width: 100%; 
+            height: 100%; 
+            object-fit: contain; 
+            filter: drop-shadow(0 3px 6px rgba(0,0,0,0.15));
+            transition: filter 0.3s;
+        }
+        
+        .duck-shield-active img {
+            filter: drop-shadow(0 0 15px #0ea5e9);
+        }
+
+        .duck-shield-aura {
+            display: none;
             position: absolute;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background-image: repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(255,255,255,0.1) 10px, rgba(255,255,255,0.1) 20px);
+            top: -5px; left: -5px; right: -5px; bottom: -5px;
+            border: 3px solid #0ea5e9;
+            border-radius: 50%;
+            animation: shieldPulse 1.5s infinite linear;
+            pointer-events: none;
+            z-index: 1;
         }
-        /* Chuyển động vịt */
-        .duck-swim {
-            transition: left 0.5s ease-out;
-            animation: bob 1s infinite alternate ease-in-out;
+        .duck-shield-active .duck-shield-aura {
+            display: block;
         }
-        @keyframes bob {
-            0% { transform: translateY(-2px); }
-            100% { transform: translateY(2px); }
+        @keyframes shieldPulse {
+            0% { transform: scale(0.9); opacity: 0.8; }
+            50% { transform: scale(1.1); opacity: 0.4; }
+            100% { transform: scale(0.9); opacity: 0.8; }
         }
-        /* Custom Scrollbar */
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+        .swimmer-name {
+            position: absolute; 
+            top: -20px; 
+            left: 50%; 
+            transform: translateX(-50%);
+            font-size: 10px; 
+            font-weight: 800; 
+            background: rgba(255,255,255,0.95);
+            padding: 2px 6px; 
+            white-space: nowrap; 
+            border: 1.5px solid var(--border); 
+            border-radius: 6px; 
+            color: var(--text); 
+            z-index: 10;
+        }
+        .swimmer-duck.my-duck .swimmer-name { 
+            background: var(--secondary); 
+            color: white; 
+            border-color: var(--secondary);
+        }
+
+        .duck-ripple {
+            position: absolute;
+            left: -10px;
+            top: 45px;
+            width: 20px;
+            height: 6px;
+            border: 1.5px solid rgba(255,255,255,0.4);
+            border-radius: 50%;
+            animation: swimRipple 1s infinite linear;
+            pointer-events: none;
+            z-index: 2;
+        }
+        @keyframes swimRipple {
+            0% { transform: scale(0.5); opacity: 0.8; }
+            100% { transform: scale(1.3); opacity: 0; }
+        }
+
+        .compact-header-under {
+            display: flex; 
+            justify-content: space-around; 
+            align-items: center;
+            background: transparent; 
+            border: none;
+            color: var(--text); 
+            padding: 8px 16px; 
+            font-size: 13px; 
+            font-weight: 800;
+            margin-top: 10px; 
+            margin-bottom: 10px;
+            border-radius: 0;
+            box-shadow: none;
+        }
+        .compact-header-under span { 
+            display: flex; 
+            align-items: center; 
+            gap: 6px; 
+            background: white;
+            padding: 4px 12px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+        }
+        .highlight-text { color: var(--secondary); font-weight: 900; }
+
+        .question-box { 
+            font-size: 18px; 
+            font-weight: 800; 
+            margin: 10px 0; 
+            color: var(--text); 
+            background: white; 
+            padding: 15px; 
+            border: 1.5px solid var(--border); 
+            border-radius: 12px; 
+            text-align: center;
+        }
+        
+        .options-grid { 
+            display: grid; 
+            grid-template-columns: 1fr 1fr; 
+            gap: 10px; 
+            margin-bottom: 10px;
+        }
+        
+        .option-btn { 
+            background: white; 
+            color: var(--text); 
+            border: 1.5px solid var(--border); 
+            border-radius: 12px; 
+            font-size: 15px; 
+            font-weight: 700;
+            padding: 12px; 
+            text-align: left; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            justify-content: center; 
+            gap: 4px; 
+            height: 100%;
+            transition: all 0.2s;
+        }
+        .option-btn:hover:not(:disabled) { 
+            border-color: var(--secondary); 
+            background: #f0f9ff;
+            transform: scale(1.01);
+        }
+        .option-btn.selected {
+            border-color: var(--secondary);
+            background: #e0f2fe;
+            font-weight: 800;
+        }
+
+        .podium-container { 
+            display: flex; 
+            align-items: flex-end; 
+            justify-content: center; 
+            gap: 25px; 
+            height: 220px; 
+            margin: 15px 0; 
+        }
+        .podium-item { 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            width: 140px; 
+            position: relative; 
+        }
+        .podium-duck { 
+            width: 70px; 
+            height: 70px; 
+            margin-bottom: 6px; 
+        }
+        
+        .podium-bar { 
+            width: 100%; 
+            display: flex; 
+            flex-direction: column;
+            justify-content: center; 
+            align-items: center; 
+            color: var(--text); 
+            font-weight: 900; 
+            border: 1.5px solid var(--border); 
+            border-bottom: none; 
+            border-radius: 8px 8px 0 0;
+            background: #f8fafc;
+        }
+        .podium-bar .rank-num { font-size: 20px; line-height: 1; margin: 4px 0;}
+
+        .podium-item.rank-1 .podium-bar { height: 110px; background: #fef08a; border-color: #fde047; } 
+        .podium-item.rank-2 .podium-bar { height: 85px; background: #e2e8f0; border-color: #cbd5e1; } 
+        .podium-item.rank-3 .podium-bar { height: 65px; background: #fed7aa; border-color: #fdba74; } 
+
+        .summary-list { 
+            max-width: 900px; 
+            margin: 0 auto; 
+            background: white; 
+            border: 1.5px solid var(--border); 
+            border-radius: 12px; 
+            overflow-y: auto; 
+            max-height: 300px; 
+        }
+        .summary-row { 
+            display: flex; 
+            justify-content: space-between; 
+            padding: 16px 24px; 
+            border-bottom: 1.5px solid var(--border); 
+            font-weight: 800; 
+            font-size: 18px;
+        }
+        .summary-row.top { background: #f0f9ff; color: var(--secondary); }
+
+        #toast-container { position: fixed; top: 20px; right: 20px; z-index: 99999; display: flex; flex-direction: column; gap: 8px; pointer-events: none; }
+        .toast-item { background-color: #1e293b; color: #ffffff; padding: 10px 16px; font-size: 13px; font-weight: 700; pointer-events: auto; animation: slideInToast 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.1) forwards; text-align: left; min-width: 220px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        .toast-item.error { background-color: var(--danger); }
+        .toast-item.success { background-color: var(--success); }
+        @keyframes slideInToast { from { transform: translateX(120%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        @keyframes slideOutToast { from { transform: translateX(0); opacity: 1; } to { transform: translateX(120%); opacity: 0; } }
+
+        .instruction-box {
+            background-color: #f8fafc;
+            border: 1.5px dashed var(--secondary);
+            border-radius: 8px;
+            padding: 12px;
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-bottom: 12px;
+            line-height: 1.5;
+        }
+        .instruction-box strong { color: var(--text); }
+
+        .atk-def-card {
+            background: #fffbeb;
+            border: 2px solid #fbbf24;
+            border-radius: 12px;
+            padding: 12px;
+            margin-bottom: 10px;
+            animation: fadeIn 0.3s;
+        }
     </style>
 </head>
-<body class="min-h-screen p-4 flex flex-col items-center">
+<body>
 
-    <!-- Cảnh báo lỗi tĩnh -->
-    <div id="systemAlert" class="hidden w-full max-w-4xl bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4">
-        <strong class="font-bold">Cảnh báo hệ thống:</strong>
-        <span class="block sm:inline" id="systemAlertMsg">Không thể kết nối máy chủ. Vui lòng đảm bảo bạn đang chạy trên môi trường được hỗ trợ.</span>
-    </div>
+<div id="toast-container"></div>
 
-    <!-- Khung thông báo Popup -->
-    <div id="customAlert" class="hidden fixed inset-0 bg-slate-900/40 z-50 flex items-center justify-center p-4">
-        <div class="bg-white rounded-xl p-6 max-w-sm w-full text-center shadow-xl">
-            <h3 id="alertTitle" class="text-xl font-bold text-slate-800 mb-2">Thông báo</h3>
-            <p id="alertMessage" class="text-slate-600 mb-6">Nội dung</p>
-            <button onclick="closeAlert()" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-6 rounded shadow transition">
-                Đồng ý
-            </button>
-        </div>
-    </div>
-
-    <!-- KHUNG CHÍNH -->
-    <div class="w-full max-w-5xl bg-white rounded-2xl shadow-lg p-6 border border-slate-200">
+<div id="app">
+    <div id="screen-home" class="screen active">
+        <div style="display: flex; justify-content: center; margin-bottom: 15px; gap: 10px;" id="home-deco-ducks"></div>
+        <h1 style="font-size: 2.8em; margin-bottom: 5px; color: var(--text);">Đua Vịt Trí Tuệ</h1>
+        <p style="color: var(--text-muted); font-size: 1.1em; margin-bottom: 30px; font-weight: 700; text-align: center;">Hệ thống học tập và kiểm tra trực tuyến</p>
         
-        <header class="text-center mb-8 border-b border-slate-100 pb-4">
-            <h1 class="text-4xl font-bold text-blue-600 tracking-tight">ĐUA VỊT TRẮC NGHIỆM</h1>
-            <p class="text-slate-500 mt-2">Trả lời câu hỏi thật nhanh để đưa vịt về đích</p>
-        </header>
-
-        <!-- MÀN HÌNH 1: LOBBY -->
-        <div id="lobbyScreen" class="space-y-6">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <!-- Phần Tạo Phòng (Dành cho Quản trò) -->
-                <div class="bg-slate-50 p-6 rounded-xl border border-slate-200 flex flex-col justify-between">
-                    <div>
-                        <h2 class="text-xl font-bold text-slate-700 mb-2">Dành Cho Quản Trò</h2>
-                        <p class="text-slate-600 text-sm mb-6">Tạo phòng, soạn câu hỏi và điều khiển trò chơi. Quản trò không tham gia đua.</p>
-                    </div>
-                    <button onclick="createNewRoom()" class="w-full bg-slate-800 hover:bg-slate-900 text-white font-bold text-lg py-3 px-6 rounded-lg transition">
-                        TẠO PHÒNG MỚI
-                    </button>
-                </div>
-
-                <!-- Phần Tham Gia (Dành cho Người chơi) -->
-                <div class="bg-blue-50 p-6 rounded-xl border border-blue-200 flex flex-col justify-between">
-                    <div>
-                        <h2 class="text-xl font-bold text-blue-800 mb-2">Dành Cho Người Chơi</h2>
-                        <p class="text-blue-600 text-sm mb-4">Nhập mã phòng do quản trò cung cấp để tham gia đường đua.</p>
-                        <input type="text" id="roomCodeInput" placeholder="Nhập Mã Phòng..." class="w-full px-4 py-3 rounded-lg border border-blue-300 focus:border-blue-500 focus:outline-none text-center text-xl font-bold text-blue-900 uppercase tracking-widest">
-                    </div>
-                    <button onclick="joinExistingRoom()" class="w-full mt-4 bg-blue-500 hover:bg-blue-600 text-white font-bold text-lg py-3 px-6 rounded-lg transition">
-                        THAM GIA NGAY
-                    </button>
-                </div>
-            </div>
+        <div style="background: white; padding: 25px; max-width: 420px; margin: 0 auto; border: 1.5px solid var(--border); border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);">
+            <input type="text" id="join-room-id" placeholder="NHẬP MÃ PHÒNG CHƠI..." style="text-align: center; font-size: 1.2em; font-weight: 800; letter-spacing: 1px; padding: 12px; text-transform: uppercase; border: 1.5px solid var(--border); background: #f8fafc; height: 50px;">
+            <button class="btn-secondary" style="width: 100%; font-size: 1.1em; padding: 12px; height: 50px; margin-top:15px; border-radius: 8px;" onclick="joinRoom()">Vào Phòng Đua</button>
         </div>
 
-        <!-- MÀN HÌNH 2: PHÒNG CHỜ & CÀI ĐẶT -->
-        <div id="roomScreen" class="hidden space-y-6">
-            
-            <!-- Header Phòng -->
-            <div class="flex flex-wrap items-center justify-between bg-slate-100 p-4 rounded-xl border border-slate-200">
-                <div class="flex items-center space-x-4">
-                    <span class="text-slate-500 font-bold">MÃ PHÒNG:</span>
-                    <span id="displayRoomId" class="text-3xl font-bold text-slate-800 tracking-widest">------</span>
-                </div>
-                <button onclick="leaveRoom()" class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded transition">
-                    Rời Phòng
-                </button>
-            </div>
-
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                
-                <!-- CỘT TRÁI: Dành cho Host cài đặt câu hỏi HOẶC Người chơi cài đặt nhân vật -->
-                
-                <!-- Giao diện Host: Soạn câu hỏi -->
-                <div id="hostSetupSection" class="hidden bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-4">
-                    <h3 class="text-lg font-bold text-slate-800 border-b pb-2">Ngân Hàng Câu Hỏi</h3>
-                    
-                    <!-- Form thêm câu hỏi -->
-                    <div class="space-y-3 bg-slate-50 p-4 rounded border border-slate-200">
-                        <input type="text" id="qInput" placeholder="Nhập nội dung câu hỏi..." class="w-full p-2 border rounded focus:outline-none focus:border-blue-500">
-                        <div class="grid grid-cols-2 gap-2">
-                            <input type="text" id="opt1" placeholder="Đáp án 1" class="w-full p-2 border rounded text-sm focus:outline-none focus:border-blue-500">
-                            <input type="text" id="opt2" placeholder="Đáp án 2" class="w-full p-2 border rounded text-sm focus:outline-none focus:border-blue-500">
-                            <input type="text" id="opt3" placeholder="Đáp án 3" class="w-full p-2 border rounded text-sm focus:outline-none focus:border-blue-500">
-                            <input type="text" id="opt4" placeholder="Đáp án 4" class="w-full p-2 border rounded text-sm focus:outline-none focus:border-blue-500">
-                        </div>
-                        <div class="flex items-center space-x-2">
-                            <label class="text-sm font-bold text-slate-600">Đáp án đúng là:</label>
-                            <select id="correctOpt" class="p-2 border rounded text-sm focus:outline-none">
-                                <option value="0">Đáp án 1</option>
-                                <option value="1">Đáp án 2</option>
-                                <option value="2">Đáp án 3</option>
-                                <option value="3">Đáp án 4</option>
-                            </select>
-                            <button onclick="addQuestion()" class="flex-1 bg-slate-800 hover:bg-slate-700 text-white font-bold py-2 px-4 rounded text-sm transition">
-                                Thêm Câu
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Danh sách câu hỏi đã thêm -->
-                    <div class="max-h-60 overflow-y-auto space-y-2 pr-2" id="questionList">
-                        <p class="text-sm text-slate-400 italic text-center py-4">Chưa có câu hỏi nào. Vui lòng thêm câu hỏi.</p>
-                    </div>
-                    
-                    <div class="pt-4 border-t">
-                        <button id="startGameBtn" onclick="startGame()" class="w-full bg-green-500 hover:bg-green-600 text-white font-bold text-lg py-3 rounded transition disabled:opacity-50">
-                            BẮT ĐẦU TRÒ CHƠI
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Giao diện Player: Chọn tên và vịt -->
-                <div id="playerSetupSection" class="hidden bg-white p-5 rounded-xl border border-blue-200 shadow-sm space-y-4">
-                    <h3 class="text-lg font-bold text-blue-800 border-b border-blue-100 pb-2">Thông Tin Của Bạn</h3>
-                    
-                    <div>
-                        <label class="block text-sm font-bold text-slate-600 mb-1">Tên hiển thị:</label>
-                        <input type="text" id="playerNameInput" onchange="updateMyProfile()" maxlength="15" class="w-full px-3 py-2 border rounded focus:outline-none focus:border-blue-500 font-bold text-slate-800">
-                    </div>
-                    
-                    <div>
-                        <label class="block text-sm font-bold text-slate-600 mb-1">Chọn chú vịt của bạn:</label>
-                        <div class="flex items-center justify-between gap-2 bg-slate-50 p-2 rounded border border-slate-200">
-                            <button onclick="selectDuck(0)" class="duck-option-btn p-1 border-2 border-transparent rounded hover:border-blue-300" data-idx="0">
-                                <img src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEio5NMQMiuKXTCOXQvzxb5vFWXjZG7_IIysgX8Zg14gzmGpfsk22qMGxy2ypHHmyE2XNdX-ZzT-aUufD2JVSbRtOXwZG9Q51OtghktjqsC3F57nMz1ivSTY2o5gdynhV-4oyum_9ofgC94dRkothtwL_xVo1qC5uwzWinCBVM1DJNmZVwUHowKRptuY3D8/s1600/1.png" class="w-12 h-12 object-contain" alt="Vịt 1">
-                            </button>
-                            <button onclick="selectDuck(1)" class="duck-option-btn p-1 border-2 border-transparent rounded hover:border-blue-300" data-idx="1">
-                                <img src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEg9vFCpKyoxx3KKVa0jhydlnzr4Q8RL0YCsbnbvlVAjMBAf5bOK-TwDCTLkN6Mw0ms7CMpQiJrCkNivC1SMcuFQI8ZM_N-zKiEeFZ9uGz0gw3id5rIlAbgDJG16ydwdIYXCzw5ZiFhzjMcjJnDSj2t_KGvakYcED8sciotydDWlBYjQZrZIcZc5H-nwLXc/s1600/2.png" class="w-12 h-12 object-contain" alt="Vịt 2">
-                            </button>
-                            <button onclick="selectDuck(2)" class="duck-option-btn p-1 border-2 border-transparent rounded hover:border-blue-300" data-idx="2">
-                                <img src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiLePIMA1TPl7tiwjzlxbG02PBfmQgeLjBk0P-Xk28v4EN92gU-gV7MQlMQPdQxbES6t_vdP5rdTLEvLw_EdXJW2-zpDkry-vRL5m0C4XO02KRepuQvIQKtxanRpdBw_YIMhaKbnvFCigPs5eFmiJ67ji6MPsNFU0ZsA3iZbYq1MKNAZb2HNC9a07XPkWY/s1600/3.png" class="w-12 h-12 object-contain" alt="Vịt 3">
-                            </button>
-                            <button onclick="selectDuck(3)" class="duck-option-btn p-1 border-2 border-transparent rounded hover:border-blue-300" data-idx="3">
-                                <img src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgHZBy-OaHuKyHN7Ju1huDZc_2OrX1rYcG4UrCJRKacCuOiv0Z0Lnp96qI23PG1NOT_I60l-2rY1mHgBgOkFONQde9rhM0umZTYFOtCQuUd1j0y3wrr63EwEDfIXPFvMqf3ExBzIyumrRR3cnee10FQ0Vs2tHDEZ0DYoaWg7NS-Iig6px5Cb3kiqqXsj5U/s1600/4.png" class="w-12 h-12 object-contain" alt="Vịt 4">
-                            </button>
-                            <button onclick="selectDuck(4)" class="duck-option-btn p-1 border-2 border-transparent rounded hover:border-blue-300" data-idx="4">
-                                <img src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhEiFklZ7yJWqvkZEhGcVuZmjl11TtL1mcqefAk9U2Q9OlFOWkEvLN_XorM0et8V0bHtxHWp8YQSzK1qvb20DqEPvz6tlSls2cNVtMYHm19sYgXaBgWpcpwat7LqiJJTEMqFAomxihhjPpQOa94fXMOtqjlWrzAN1c9T_9jZus41GusI1qaRCbNwSAp8ZM/s1600/5.png" class="w-12 h-12 object-contain" alt="Vịt 5">
-                            </button>
-                        </div>
-                    </div>
-
-                    <div class="bg-blue-50 p-4 rounded text-center border border-blue-100">
-                        <p class="font-bold text-blue-800">Đang chờ quản trò bắt đầu trò chơi...</p>
-                    </div>
-                </div>
-
-                <!-- CỘT PHẢI: Danh sách người chơi tham gia -->
-                <div class="bg-slate-50 p-5 rounded-xl border border-slate-200 space-y-4">
-                    <h3 class="text-lg font-bold text-slate-800 border-b pb-2 flex justify-between">
-                        Danh Sách Người Chơi
-                        <span class="text-blue-600 bg-blue-100 px-2 py-0.5 rounded text-sm" id="playerCount">0</span>
-                    </h3>
-                    <div id="waitingPlayerList" class="space-y-2 max-h-80 overflow-y-auto">
-                        <!-- Render players -->
-                    </div>
-                </div>
-
-            </div>
+        <div style="margin-top: 30px; text-align: center;">
+            <button class="btn-outline" style="font-size: 0.9em; border-radius: 8px;" onclick="showCreateRoom()">Tạo Phòng Đua (Dành cho Giáo viên)</button>
         </div>
-
-        <!-- MÀN HÌNH 3: GAME PLAY (ĐUA & TRẢ LỜI CÂU HỎI) -->
-        <div id="gameScreen" class="hidden space-y-6">
-            
-            <!-- Khu vực Đường Đua (Chung cho Host & Player) -->
-            <div class="bg-blue-50 rounded-xl p-4 border border-blue-200">
-                <div class="flex justify-between text-sm font-bold text-blue-800 mb-2 px-2">
-                    <span>XUẤT PHÁT</span>
-                    <span>ĐÍCH ĐẾN</span>
-                </div>
-                <div id="tracksContainer" class="space-y-3 max-h-[40vh] overflow-y-auto pr-2">
-                    <!-- Tracks render here -->
-                </div>
-            </div>
-
-            <!-- Giao diện Tương Tác Tùy Theo Vai Trò -->
-            
-            <!-- Dành cho Người Chơi (Trả lời câu hỏi) -->
-            <div id="playerQuizSection" class="hidden bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-                <div id="quizContainer">
-                    <div class="flex justify-between items-center mb-4">
-                        <span class="text-sm font-bold text-slate-500" id="questionProgressText">Câu hỏi 1 / 5</span>
-                        <span id="feedbackText" class="text-sm font-bold opacity-0 transition-opacity"></span>
-                    </div>
-                    
-                    <h2 id="questionText" class="text-2xl font-bold text-slate-800 mb-6 text-center bg-slate-50 p-4 rounded border">Nội dung câu hỏi hiển thị ở đây</h2>
-                    
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4" id="optionsContainer">
-                        <!-- Nút đáp án -->
-                    </div>
-                </div>
-                
-                <div id="finishedMessage" class="hidden text-center py-8">
-                    <h2 class="text-3xl font-bold text-green-600 mb-2">ĐÃ HOÀN THÀNH!</h2>
-                    <p class="text-slate-600">Tuyệt vời! Vui lòng đợi các người chơi khác hoàn thành đường đua.</p>
-                </div>
-            </div>
-
-            <!-- Dành cho Host (Theo dõi tiến độ) -->
-            <div id="hostDashboardSection" class="hidden bg-white p-6 rounded-xl border border-slate-200 shadow-sm text-center">
-                <h3 class="text-xl font-bold text-slate-800 mb-2">Bảng Điều Khiển Quản Trò</h3>
-                <p class="text-slate-600 mb-6">Trò chơi đang diễn ra. Người chơi đang trả lời câu hỏi...</p>
-                
-                <button onclick="endGameEarly()" class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-6 rounded transition">
-                    Kết Thúc Trò Chơi Sớm
-                </button>
-            </div>
-
-        </div>
-
-        <!-- MÀN HÌNH 4: BẢNG XẾP HẠNG -->
-        <div id="resultScreen" class="hidden space-y-6 text-center">
-            <h2 class="text-3xl font-bold text-slate-800">BẢNG XẾP HẠNG CHUNG CUỘC</h2>
-            
-            <div id="leaderboardList" class="max-w-2xl mx-auto space-y-3">
-                <!-- Rank rows here -->
-            </div>
-
-            <div class="pt-6">
-                <button onclick="resetToLobby()" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-8 rounded transition">
-                    Trở Về Màn Hình Chính
-                </button>
-            </div>
-        </div>
-
     </div>
 
-    <!-- Logic Script -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, getDoc, updateDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+    <div id="screen-host-lobby" class="screen">
+        <div class="host-lobby-header">
+            <div class="info-badge" style="gap: 12px;">
+                Mã Phòng: <strong id="host-room-id-display"></strong>
+                <button class="sound-toggle-btn" onclick="toggleSound()">🔊</button>
+            </div>
+            <div class="info-badge">Số lượng người chơi: <strong id="host-player-count" style="color: var(--secondary);">0</strong></div>
+            <div style="display: flex; gap: 10px;">
+                <button id="btn-start-game" class="btn-green" style="display:none;" onclick="startGame()">Bắt Đầu Đua</button>
+                <button class="btn-danger" onclick="closeRoom()">Đóng phòng</button>
+            </div>
+        </div>
 
-        const DUCK_IMAGES = [
-            "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEio5NMQMiuKXTCOXQvzxb5vFWXjZG7_IIysgX8Zg14gzmGpfsk22qMGxy2ypHHmyE2XNdX-ZzT-aUufD2JVSbRtOXwZG9Q51OtghktjqsC3F57nMz1ivSTY2o5gdynhV-4oyum_9ofgC94dRkothtwL_xVo1qC5uwzWinCBVM1DJNmZVwUHowKRptuY3D8/s1600/1.png",
-            "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEg9vFCpKyoxx3KKVa0jhydlnzr4Q8RL0YCsbnbvlVAjMBAf5bOK-TwDCTLkN6Mw0ms7CMpQiJrCkNivC1SMcuFQI8ZM_N-zKiEeFZ9uGz0gw3id5rIlAbgDJG16ydwdIYXCzw5ZiFhzjMcjJnDSj2t_KGvakYcED8sciotydDWlBYjQZrZIcZc5H-nwLXc/s1600/2.png",
-            "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiLePIMA1TPl7tiwjzlxbG02PBfmQgeLjBk0P-Xk28v4EN92gU-gV7MQlMQPdQxbES6t_vdP5rdTLEvLw_EdXJW2-zpDkry-vRL5m0C4XO02KRepuQvIQKtxanRpdBw_YIMhaKbnvFCigPs5eFmiJ67ji6MPsNFU0ZsA3iZbYq1MKNAZb2HNC9a07XPkWY/s1600/3.png",
-            "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgHZBy-OaHuKyHN7Ju1huDZc_2OrX1rYcG4UrCJRKacCuOiv0Z0Lnp96qI23PG1NOT_I60l-2rY1mHgBgOkFONQde9rhM0umZTYFOtCQuUd1j0y3wrr63EwEDfIXPFvMqf3ExBzIyumrRR3cnee10FQ0Vs2tHDEZ0DYoaWg7NS-Iig6px5Cb3kiqqXsj5U/s1600/4.png",
-            "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhEiFklZ7yJWqvkZEhGcVuZmjl11TtL1mcqefAk9U2Q9OlFOWkEvLN_XorM0et8V0bHtxHWp8YQSzK1qvb20DqEPvz6tlSls2cNVtMYHm19sYgXaBgWpcpwat7LqiJJTEMqFAomxihhjPpQOa94fXMOtqjlWrzAN1c9T_9jZus41GusI1qaRCbNwSAp8ZM/s1600/5.png"
-        ];
-        const ADORABLE_NAMES = ["Học Sinh Tích Cực", "Bạn Nhỏ Vui Vẻ", "Siêu Trí Tuệ", "Ong Chăm Chỉ", "Sóc Nhanh Nhẹn"];
+        <div style="margin-bottom: 15px;">
+            <h3 style="text-align: left; font-size: 15px; color: var(--text-muted); margin-bottom: 8px; font-weight: 700;">Danh sách học sinh sẵn sàng</h3>
+            <div class="host-player-list-container" id="host-player-list" style="display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; min-height: 100px; background: #f8fafc; padding: 15px; border: 1.5px solid var(--border); border-radius: 12px;">
+                <p style="color: var(--text-muted); font-style:italic; width:100%; text-align: center; font-size: 13px;">Đang chờ người chơi tham gia...</p>
+            </div>
+        </div>
 
-        // Kiểm tra biến môi trường Firebase
-        let firebaseConfig = null;
-        let appId = 'duck-quiz-default';
-        try {
-            if (typeof __firebase_config !== 'undefined') {
-                firebaseConfig = JSON.parse(__firebase_config);
-            }
-            if (typeof __app_id !== 'undefined') {
-                appId = __app_id;
-            }
-        } catch (e) {}
+        <div class="settings-container-direct">
+            <div class="ui-card">
+                <div class="ui-card-title">Thiết Lập Đường Đua</div>
+                <div style="display: flex; flex-wrap: wrap; gap: 15px; align-items: flex-end;">
+                    <div style="flex: 1; min-width: 120px;">
+                        <label class="form-label">Thời gian đua (giây):</label>
+                        <input type="number" id="cfg-time" value="300" min="10" max="600" onchange="saveDirectHostSettings()">
+                    </div>
+                    <div style="flex: 1; min-width: 150px;">
+                        <label class="form-label">Điểm để về đích:</label>
+                        <input type="number" id="cfg-target-score" value="0" placeholder="0 = Trả lời hết câu" onchange="saveDirectHostSettings()">
+                    </div>
+                    <div style="flex: 1; min-width: 120px;">
+                        <label class="form-label">Đấu Đội:</label>
+                        <select id="cfg-team-mode" onchange="document.getElementById('direct-team-count-wrap').style.display = (this.value === 'true') ? 'block' : 'none'; saveDirectHostSettings();">
+                            <option value="false">Tắt</option>
+                            <option value="true">Bật</option>
+                        </select>
+                    </div>
+                    <div id="direct-team-count-wrap" style="display:none; flex: 1; min-width: 100px;">
+                        <label class="form-label">Số Đội:</label>
+                        <input type="number" id="cfg-team-count" value="2" min="2" max="10" onchange="saveDirectHostSettings()">
+                    </div>
+                    <div style="flex: 1; min-width: 180px;">
+                        <label class="form-label">Chế độ đặc biệt:</label>
+                        <select id="cfg-special-mode" onchange="saveDirectHostSettings()">
+                            <option value="normal">Tự Do (Cơ bản)</option>
+                            <option value="sudden_death">Đột Kích (Phạt lùi)</option>
+                            <option value="storm">Bão Tăng Tốc (Nhân đôi)</option>
+                        </select>
+                    </div>
+                    <div style="flex: 1; min-width: 180px;">
+                        <label class="form-label">Tấn Công & Phòng Thủ:</label>
+                        <select id="cfg-atk-def" onchange="saveDirectHostSettings()">
+                            <option value="true">Bật</option>
+                            <option value="false" selected>Tắt</option>
+                        </select>
+                    </div>
+                    <div style="display: flex; flex-direction: column; gap: 10px; padding-bottom: 8px; min-width: 180px;">
+                        <label style="display: flex; align-items: center; gap: 5px; font-weight: 700; cursor: pointer; font-size: 13px;">
+                            <input type="checkbox" id="cfg-loop-questions" checked style="width: 16px; height: 16px; margin:0;" onchange="saveDirectHostSettings()"> Lặp lại các câu hỏi trả lời sai
+                        </label>
+                        <div style="display: flex; gap: 10px;">
+                            <label style="display: flex; align-items: center; gap: 5px; font-weight: 700; cursor: pointer; font-size: 13px;">
+                                <input type="checkbox" id="cfg-shuffle-ans" checked style="width: 16px; height: 16px; margin:0;" onchange="saveDirectHostSettings()"> Đảo đáp án
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 5px; font-weight: 700; cursor: pointer; font-size: 13px;">
+                                <input type="checkbox" id="cfg-shuffle-qs" checked style="width: 16px; height: 16px; margin:0;" onchange="saveDirectHostSettings()"> Đảo câu hỏi
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
-        if (!firebaseConfig) {
-            document.getElementById('systemAlert').classList.remove('hidden');
-        }
+            <div class="ui-card">
+                <div class="ui-card-title">Nạp Câu Hỏi</div>
+                <div class="instruction-box">
+                    Nhập nội dung câu hỏi và các lựa chọn đáp án, ngăn cách nhau bởi ký tự gạch đứng (<code>|</code>). <br>
+                    Cú pháp: <code>Nội dung câu hỏi | Đáp án A | Đáp án B | Đáp án C | Đáp án D | Số đáp án đúng (Ví dụ: 1 hoặc 1,2)</code>.
+                </div>
+                
+                <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 15px;">
+                    <input type="file" id="excel-file-upload" accept=".xlsx, .xls, .csv" style="display: none;" onchange="handleExcelUpload(event)">
+                    <button class="btn-green" onclick="document.getElementById('excel-file-upload').click()">Nhập Excel</button>
+                    <button class="btn-secondary" onclick="exportToExcelXLSX()">Xuất Excel mẫu</button>
+                </div>
+                
+                <textarea id="import-excel-text" placeholder="Ví dụ: Đâu là hành tinh gần Mặt Trời nhất? | Sao Thủy | Sao Kim | Trái Đất | Sao Hỏa | 1" style="height: 80px; font-size: 13px; margin-bottom: 10px;"></textarea>
+                <button class="btn-warning" style="width: 100%; color: white;" onclick="processTextImport()">Cập nhật từ văn bản</button>
+            </div>
 
-        const app = initializeApp(firebaseConfig || { apiKey: "dummy", projectId: "dummy" });
-        const auth = getAuth(app);
-        const db = getFirestore(app);
+            <div class="ui-card" style="padding: 15px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                    <div class="ui-card-title" style="margin: 0; border:none; padding:0;">Danh sách câu hỏi (<span id="total-questions-badge" style="color: var(--secondary);">0</span> câu)</div>
+                    <div style="display: flex; gap: 10px;">
+                        <button class="btn-outline" style="padding: 6px 12px; font-size: 13px;" onclick="addBlankQuestion()">+ Thêm câu hỏi</button>
+                        <button class="btn-danger" style="padding: 6px 12px; font-size: 13px;" onclick="deleteAllQuestions()">Xóa tất cả</button>
+                    </div>
+                </div>
+                <div class="q-table-wrap">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th style="width:5%">STT</th>
+                                <th style="width:15%">Loại câu</th>
+                                <th style="width:25%">Câu hỏi & Ảnh</th>
+                                <th style="width:12%">A / Đúng</th>
+                                <th style="width:12%">B / Sai</th>
+                                <th style="width:12%">C</th>
+                                <th style="width:12%">D</th>
+                                <th style="width:10%">Đúng (VD: 1 hoặc 1,2)</th>
+                                <th style="width:5%">Xóa</th>
+                            </tr>
+                        </thead>
+                        <tbody id="q-table-body"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
 
-        // State nội bộ
-        let userId = null;
-        let currentRoomId = null;
-        let roomUnsubscribe = null;
-        let currentRoomData = null;
+    <div id="screen-player-lobby" class="screen">
+        <div class="host-lobby-header" style="justify-content: space-between;">
+            <div style="display: flex; align-items: center; gap: 15px; flex-wrap: wrap; flex-grow: 1;">
+                <div class="info-badge" style="gap: 12px;">
+                    Phòng: <strong id="player-room-id-display"></strong>
+                    <button class="sound-toggle-btn" onclick="toggleSound()">🔊</button>
+                </div>
+                <div class="info-badge" style="background: white; flex-grow: 1; max-width: 550px;">
+                    <img id="header-my-duck" src="" style="width: 36px; height: 36px; object-fit: contain; margin-right: 8px;" class="floating-duck-gentle">
+                    <input type="text" id="player-name-input" placeholder="Nhập họ và tên của học sinh..." oninput="autoSavePlayerInfo()" style="border: none; background: transparent; font-weight: 800; color: var(--text); width: 100%; height: 100%;">
+                </div>
+            </div>
+            <div style="display: flex; gap: 10px; margin-left: 10px;">
+                <button id="btn-player-ready" onclick="toggleReady()">SẴN SÀNG</button>
+                <button class="btn-danger" onclick="leaveRoom()">Thoát</button>
+            </div>
+        </div>
+
+        <div class="lobby-layout">
+            <div class="lobby-left">
+                <h3 style="margin-top: 0; color: var(--text-muted); font-size: 14px; border-bottom: 1.5px solid var(--border); padding-bottom: 8px; text-align: left;">Người chơi cùng phòng</h3>
+                <div class="player-list" id="player-lobby-other-list"></div>
+            </div>
+            <div class="lobby-right">
+                <h3 style="margin-top: 0; color: var(--text-muted); font-size: 14px; border-bottom: 1.5px solid var(--border); padding-bottom: 8px; text-align: left;">Chọn trang phục</h3>
+                <div class="duck-selector" id="player-duck-selector"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="screen-host-game" class="screen">
+        <div class="pool-viewport">
+            <div class="race-pool" id="race-pool">
+                <div class="water-waves"></div>
+                <div class="scenery-backdrop"><div class="trees" id="host-trees"></div></div>
+                <div class="start-line"></div>
+                <div class="finish-line"></div>
+            </div>
+        </div>
+
+        <div class="compact-header-under">
+            <span style="gap: 8px;">
+                Số phòng: <span id="host-game-room-id" class="highlight-text">-</span>
+                <button class="sound-toggle-btn" style="width: 28px; height: 28px; font-size: 12px;" onclick="toggleSound()">🔊</button>
+            </span>
+            <span>Điểm đích: <span id="host-target-score" class="highlight-text">Tất cả</span></span>
+            <span>Học sinh dẫn đầu: <span id="host-current-q-num" class="highlight-text">-</span></span>
+            <span>Thời gian còn lại: <span id="host-timer" class="highlight-text">300s</span></span>
+        </div>
+
+        <div class="ui-card" style="margin-top: 10px; border-color: var(--secondary);">
+            <div class="ui-card-title" style="margin-bottom: 8px; font-size: 14px; justify-content: center; color: var(--primary); border: none; padding: 0; font-weight: 800;">
+                BẢNG ĐIỀU KHIỂN SƯ PHẠM (DÀNH CHO GIÁO VIÊN)
+            </div>
+            <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
+                <button id="btn-host-x2" class="btn-secondary" style="font-size: 13px; padding: 8px 16px;" onclick="triggerHostBonus('x2')">
+                    Kích hoạt x2 Điểm (20 giây)
+                </button>
+                <button id="btn-host-x3" class="btn-warning" style="font-size: 13px; padding: 8px 16px; color: white;" onclick="triggerHostBonus('x3')">
+                    Kích hoạt x3 Điểm (1 lần trả lời)
+                </button>
+                <button id="btn-host-lock" class="btn-danger" style="font-size: 13px; padding: 8px 16px;" onclick="toggleAnsweringLock()">
+                    Khóa Trả Lời
+                </button>
+            </div>
+            <div id="host-bonus-status-alert" style="text-align: center; font-size: 13px; font-weight: 800; color: var(--danger); margin-top: 8px; min-height: 18px;"></div>
+        </div>
+
+        <div class="ui-card" style="margin-top: 10px;">
+            <div class="ui-card-title" style="margin-bottom: 8px; font-size: 13px; justify-content: center; color: var(--text-muted); font-weight: 800; border: none; padding: 0;">
+                THỐNG KÊ LÀM BÀI CHI TIẾT CỦA HỌC SINH
+            </div>
+            <div id="host-players-accuracy-list" style="display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; font-size: 12px; font-weight: 800;">
+                <span style="color: var(--text-muted); font-style: italic;">Đang đợi học sinh trả lời câu hỏi...</span>
+            </div>
+        </div>
+
+        <div style="margin-top: 10px; display: flex; justify-content: center;">
+            <button class="btn-danger" style="padding: 8px 16px; font-size:13px;" onclick="endGameEarly()">Dừng cuộc đua</button>
+        </div>
+    </div>
+
+    <div id="screen-player-game" class="screen">
+        <div class="pool-viewport" style="margin-top: 0;">
+            <div class="race-pool" id="player-race-pool">
+                <div class="water-waves"></div>
+                <div class="scenery-backdrop" style="height: 100px;"><div class="trees" style="bottom: 20px;"></div></div>
+                <div class="start-line"></div>
+                <div class="finish-line"></div>
+            </div>
+        </div>
+
+        <div id="player-atk-def-panel" class="atk-def-card" style="display: none;">
+            <div style="font-weight: 900; color: #b45309; font-size: 13px; margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center;">
+                <span>KỸ NĂNG TẤN CÔNG / PHÒNG THỦ</span>
+                <span style="background: #fbbf24; color: #78350f; padding: 2px 6px; border-radius: 6px;">
+                    Sẵn có: <strong id="player-atk-def-charges">0</strong> lượt
+                </span>
+            </div>
+            <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                <select id="player-target-select" style="flex: 1; min-width: 150px; height: 36px; font-size: 12px; padding: 4px;">
+                    <option value="">-- Chọn đối thủ muốn tấn công --</option>
+                </select>
+                <button class="btn-danger" style="height: 36px; padding: 0 12px; font-size: 12px;" onclick="triggerAttack()">Tấn Công</button>
+                <button class="btn-green" style="height: 36px; padding: 0 12px; font-size: 12px;" onclick="triggerDefense()">Kích Hoạt Lá Chắn (15s)</button>
+            </div>
+        </div>
+
+        <div class="compact-header-under">
+            <span style="gap: 8px;">
+                Số phòng: <span id="player-game-room-id" class="highlight-text">-</span>
+                <button class="sound-toggle-btn" style="width: 28px; height: 28px; font-size: 12px;" onclick="toggleSound()">🔊</button>
+            </span>
+            <span>Điểm số: <span id="player-score-display" class="highlight-text">0</span></span>
+            <span>Câu hỏi: <span id="player-q-counter" class="highlight-text">1</span></span>
+            <span>Thời gian còn lại: <span id="player-timer" class="highlight-text">300s</span></span>
+        </div>
+
+        <div id="player-accuracy-stats" style="text-align: center; font-size: 13px; font-weight: 800; color: var(--text-muted); margin-bottom: 8px; background: white; padding: 6px; border: 1.5px solid var(--border); border-radius: 8px;">
+            Đúng: <span id="stat-correct" class="highlight-text" style="color: var(--success); font-weight: 900;">0</span> | 
+            Sai: <span id="stat-wrong" class="highlight-text" style="color: var(--danger); font-weight: 900;">0</span> | 
+            Tỉ lệ chính xác: <span id="stat-rate" class="highlight-text" style="color: var(--secondary); font-weight: 900;">0%</span>
+        </div>
+
+        <div id="player-bonus-banner" style="display: none; text-align: center; padding: 6px; font-weight: 800; font-size: 14px; border-radius: 8px; margin-bottom: 5px; animation: fadeIn 0.2s;"></div>
+
+        <div id="player-status-msg" style="font-size: 14px; font-weight: 800; margin: 4px 0; min-height: 20px; text-align: center;"></div>
+        <div class="question-box" id="player-question-text">Đang khởi động đường đua...</div>
+        <div class="options-grid" id="player-options"></div>
+        <div id="player-multi-submit-container" style="display:none; text-align: center; margin-bottom: 10px;">
+            <button class="btn-green" style="width: 180px; font-size:14px; padding: 8px;" onclick="submitMultipleChoiceAnswer()">Gửi đáp án</button>
+        </div>
+    </div>
+
+    <div id="screen-summary" class="screen">
+        <h1 style="font-size: 2.2em; margin-bottom: 5px; color: var(--secondary);">Kết Quả Cuộc Đua</h1>
         
-        let selectedDuckIdx = Math.floor(Math.random() * DUCK_IMAGES.length);
-        let myName = ADORABLE_NAMES[Math.floor(Math.random() * ADORABLE_NAMES.length)] + " " + Math.floor(Math.random() * 100);
-        let localQuestions = []; // Host dùng để lưu tạm
+        <div class="podium-container" id="podium-container"></div>
+        <div class="summary-list" id="summary-list"></div>
 
-        // Alert Helper
-        window.showCustomAlert = function(title, msg) {
-            document.getElementById('alertTitle').innerText = title;
-            document.getElementById('alertMessage').innerText = msg;
-            document.getElementById('customAlert').classList.remove('hidden');
-        }
-        window.closeAlert = function() {
-            document.getElementById('customAlert').classList.add('hidden');
-        }
+        <div style="margin-top: 20px; display: flex; gap: 12px; justify-content: center;" id="summary-buttons">
+            <button class="btn-secondary" id="btn-replay" style="display:none;" onclick="replayGame()">Chơi lại (Chủ phòng)</button>
+            <button class="btn-green" id="btn-export-res" style="display:none;" onclick="exportResults()">Xuất điểm</button>
+            <button class="btn-danger" id="btn-host-close" style="display:none;" onclick="closeRoom()">Thoát phòng</button>
+            <button class="btn-danger" id="btn-leave-game" style="display:none;" onclick="leaveRoom()">Thoát</button>
+        </div>
+    </div>
+</div>
 
-        // --- AUTHENTICATION ---
-        const initAuth = async () => {
-            if (!firebaseConfig) return;
-            try {
-                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                    await signInWithCustomToken(auth, __initial_auth_token);
-                } else {
-                    await signInAnonymously(auth);
-                }
-            } catch (err) {
-                console.error("Auth Error:", err);
-                showCustomAlert("Lỗi Hệ Thống", "Không thể kết nối đến máy chủ xác thực.");
-            }
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+<script>
+    const firebaseConfig = {
+        apiKey: "AIzaSyCJ-dgkDQbLWaL6PDD68hQGtkd4Q9D37fI", 
+        authDomain: "duck-race-17c52.firebaseapp.com", 
+        databaseURL: "https://duck-race-17c52-default-rtdb.asia-southeast1.firebasedatabase.app", 
+        projectId: "duck-race-17c52", 
+        storageBucket: "duck-race-17c52.firebasestorage.app", 
+        messagingSenderId: "87208669537", 
+        appId: "1:87208669537:web:24aed90f642d4f0a565520"
+    };
+    firebase.initializeApp(firebaseConfig); 
+    const db = firebase.database();
+
+    const duckImages = [
+        "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhC7b6kJ9XRG48O97F72ZHkPy6zAlXkJUGhn6tp872yzOHSesiTnZ-Ls6YeKlwWnoLbblHP4azTXPoi_t5fG2P-kaJHWm5s_DvqvlfiTyVeMLT7DdM-yLGvPI7O21sbto7yXKDRkvGuh6c4PuSSS5LHTpccs6_hGGERBX3Ss_dmnexfo4jQjsWquZPsNuI/s1600/1.png", 
+        "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiMgIw1eLcWLOU5pxq3jc3ipeMSPEwGBJimYkM8q9nqMAz52kPmDRXw4w4-lBN_rOVEp6f05kyi4QnW_HjWahey2y7PT6_stvsb9ZNbXnkHUgecqxBX9EKzO_BtnOIvf89FV4x0cUuLq4dYGb-MnR2Sal-x8lClUicNeLbO1A33n9kIll_WKuBrXP_7iWo/s1600/2.png", 
+        "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiPj5g_-167rT_ydV3pS0hyFEN_McOiE6xcUGsshJBiK6E_bUWBKIesjOH4MfDYJNxPlkUvRdQLU3s76m8ABsqEGhF1Q0WT8XgL0Ye63MgjAJe3n_eJWDiy86kBh4NzkuhhQNJLOAMRnqsJHWaoBBpcJUsph4qN1XlcUjvPT3xae3XvHCd51cfGkfq2dFg/s1600/3.png", 
+        "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgCDXLgEfbi_3WDzprNZmNBxYsRSWohAnWotycFtJUv_mqO4wTicewcUrY5t2P-CN7xQ2IRSrMcKmicb_nF4HfvcRYINrnHuRnzRdjOP-lOpyexAcrTxwB0VSERkw7NHCYghUhk3QnUKlVWesywXoCF6gKCsdciIifQJ43dhb46C_sO12niIMO9Yh_pM98/s1600/4.png", 
+        "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhG-r8kPtcxtGC0I086bLf8hkv-Rqyuc8uwB45jdGlRdzKHU-GMZYRLjtPS7fe50D26FGP6FE_HbjkPhHlxWvvZF2mcGdioLnGg6gtQKsRqFDHWu83IPkwv6No-Y221hoGikk_UxSqje7_Xf3oepMbtHSCm4KeH4vVCLpnA9IIx6yf_v-Hjju98p3sLa6c/s1600/5.png",
+        "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhhkWIK_vdwqCFBaR1lPkj9c-cLWPDTqccESlTTGRPLKsHoQLoRQ5Wp9cGE1GXJnJoWvRFwKapZ9PxCmQuiEIsJ5G_Ct9PIrq89-Wj9ImzWVbG4_oJxqt5bHulbk_YaLHBNCg4iOrO3N_BdAFs0fRw7RvcRVBzAs1pb1Gw5KiiDEaKZgPNBLSzyCD1fEXM/s1600/6.png", 
+        "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEib6VBC7vMuXeBXSRlRVYGt67By03Nw_grgpUgz3Spbdj9WKV7SqkmdhUVwOelhrgaLLG9FnYtc4qhwKpI_xfC2TUwJndMkctDmBKgMn-wKEwkk68yIWD6V4FxK81e0y45FDAD8jayz2ZRXysIATcCn3fxduVa3PeecliLkcaGscMGLu8REhvG4eLsSL3o/s1600/7.png", 
+        "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhraFOCG0JMYK6H6pkga_z3jDKI-6NvDuHGGNiS7CwNXpj1ueZLsRi_tT96TbHa-GVZB_7r9X_mq3PuNoyQUw0naccthI5-snPTrDLH0Of4u-r9qWoTlOIM-Ly-MZx-xd59-u7b_shxYnpyYD_E2bpRRsOD-RKHIXkfouGTDFEOzPTGvciXM94Nl1srdmY/s1600/8.png", 
+        "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjCwc_0wqIpU_peC38biHPw6j7b6XeDBUZY44ur5MLuX8EwsGADz_MkXXO_Cz1SPzflfl0Ssd_XQN801BF0YyvFWJ4gJwNlx9cG9LsdCwr7c2-NrPhzE867skrqcqZ079JxnYm0MXoEkBOGhPbSNxACUcy34mbtYQlgvazui9pWIV6kyu2oGM0b-FyxwsA/s1600/9.png", 
+        "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhGcph9EGE091RSJkLH-QgOGJNmIQKj6c2AON4ibuP7niWmZzy0lNe6UQk3LSnMlrRi3K0YGjmQ0MNNsEPco2ehvN-CybGd0QvVsIauFN3CIeMWf3jQbacdKhxPe08JHlEWaX0RBTPVu3-iXjAheuI8TU4UbbTVxmVJ2lXq7xyRl1XfaTBxmneox8by9j0/s1600/10.png",
+        "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjVd9Chs_O_c70seXP5prrpGlJYH-MBFjZbdIEqVoiMD-xQ6lt8LIljIP5vNutBUZTRg997K45oEg6pLdb9LIr70z7uuGaJaBGcmNtp2VbPqATpYnQSL7jdC2h80zRiH5PkD-Ybw25NiDp9yEiX4DXhlBp5gSNHjVrAt8XM-8I5qykGu9sIX3UWZit-QV0/s1600/11.png", 
+        "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEikC-euFpJOQzFu9xxPbWpjnNKIrc1B1l4gNbaaUQERkgQCzKR3Epiu4v1d-Haqx_5UlXNbdN4ySFhNoxfcR7KrJeIhVdRyo_q5IgmPpmJFLAztE3SDQl7y2r8Q4R5SjzsoWENg2-axR5LtOBzQ1dz8snt3fhdE-vtCBt4M3bHCxRAHv9Mc0z8s2zj5XtE/s1600/12.png", 
+        "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiJnbj_gUpHZOhLJfubc-L27CJXyrInXVEoYiXpDeCVCj9ZDFc8Eh_br2dzDSmHEaPEv836Hs6O2jKdIqPgizrvqz_ybz3lTDctsB79Vf_61LPPrNfCObUcKACx0m4_gwerLaSxYZcgp0flLOSjE87bJAcM7RM0q0Nc1n5xN0gKTmZ7Wm329TwgVDu0Ukg/s1600/13.png", 
+        "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEg5OZmrowEZbvqWBqC_6KPR1lCMVI-Uz9RYH9IBXmw1MWy6YyH1m5BDq-FZPBZn4ueas00f6iZ2IE41j0jY8YuAhlyBpVtIK672bxt0FYxk3qLvRZ3OwHiYCcp1yEnqfKN3ccwGUoClL7apWG4pdzgBQH01Jt3wASvJ1t8NESY3WOU820lBmI9nSIaFl_s/s1600/14.png", 
+        "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEi2AlpZannAin1zyMvurv75CESE77rvo5mIRFUYBpwRLsN37txuYYXnqmVBD80h-gXw4bxnwyAZtYakjNM4Vpg38nRiEypSUsftZIx01dKdvAeJpXHus8wiTO2VErEOGbYLuuT7Vn8IXKcyJd5W25TfjqkgfuvkPPGOtUteYoBDqHbQlNVdVul7Ki1g_Sc/s1600/15.png",
+        "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhy5hfSe8lGqnJjazc5eoIKsKmyw69n_Kgg9UUHlSvEGbu0i6R_QFgP5r39g4UrZSjLNxYjmdmXWsJNuFGVKTpB-vC0FNETKkLfkhH5F64YKuuOiUfnrbzGJ6x8obTu-69RGewXlHx5z4DXQBB5inZ2jUvmzqh_j9Pxj4CcITJz8bqSPi_n6M7NiosYZT8/s1600/16.png",
+        "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgKSml8gq_rmZ7ReOAwdljqf_PuvtKKIvrVTfPizfmOlwC6egVsUufv61RHPgOUsXS_K17R4G9IHVv5O3CBLm5QKVKdp8qIbM4AfG0pkM1DTUtUEHskS2PwPuZgybifs4cYIA9nuIuRWBUHTYwpQERrAnfedElqBxbqrtMQl4-3Xzb33XUMm8hN31tUhMc/s1600/17.png",
+        "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgWlO0Kjxo2qYq0GVlUz6MxhuAz7a_4wVihLdGj4o8Xn61Dgk2jhHllACtKM9q2oZ2fpM_k4lJ_FWJUhPqnr08WoVns4o7MQ5R4wUCFZOWnhOa3i2N0mqiYzLeglGrr20kvqTEF5256V9Swumm5de3daZyLCKogcaqRblGlegi2iGMmaQSQhn1Z3WlUZfM/s1600/18.png",
+        "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgjp_kKusP0RvoXAfa6q12Xks1zwgkWFxwECrjBZfY4DMFxjCGbQ0gXspzbk6_YULn0m1ABO2deFMWflJJaYkBHsxc_W6bVN41xHmCD2_FOEd4Me67mIxyFBHC-tj2jPMsJQmMd7y35sUeWX0d_2rGLCgQrv4o4Kf524eMClWQ1eIUvbxVmYrvzKyCmcNs/s1600/19.png",
+        "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgwLk1f2SZYwBF7CGJC1DHRhaC0tLGNn-SEbEbok30zEkGzLEoX4657F655y3cVVsBJDdcMymjTHQDAfG3gGg-9q7EihmYHZxo2PM6lLOTQa0w0D1q2h-hFCkjGked9Waa6aNPwmXAOILaF_i2qUorHZDJHJbrxiNpbVd7QM3S_cclKfYLfpoIYFbiz1hk/s1600/20.png",
+        "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEj6KbXrnAlSl-_O6zO1Fo1f-2gyUcZKPlW8mT_LR84yApMz7eUMlZLC3jzG0vDfu8CmNK2fK6z-PznKhClyLwlRVpZnJM8bnnS-yVPBuBi8apYC2-lDdHqDo-2RbbYu6EUHWSRhKsyyspdX1QXkMZX4LTQRaFWjEUDwe2adC5mT_I4GT29XhUQLvbXh3p8/s1600/21.png",
+        "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEh8ORxolbNHWxkSfrladCyN59OH3JniynaqV0sBWaZuDmcORdQkksBDgFnyEyKfXMj8qR8EgboSZlv3Q1RucCp4gwS8fq1GJHaz2a1DBxU7A4oRQ3UXIZ1249yk3MtlVLkKTDJ6hZPJxCLH4MuJX393wACmSOOTuGu0Fl3xF8QmvTzAp-9JqjCDtYqqSoU/s1600/22.png",
+        "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhBh0FiqKRy-uz_sSKEC2IVlTTf2Gt9xrfjkgZSoxpl0PSCb1YBPdXTs8A4Os3DMMd0IVbkoaY68LvLkohD1l39y4XKcPvz6WOD8I9Syad1O9tkihKZ-lJGg4pb6Ig0CmU-bFCZ0wyD-eMyv5BzM42qWI6BitoUEsaRHEymU8m5OQNwaruu6CbeotT8ozI/s1600/23.png",
+        "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgz84f-g6kkooPm7Hl2ZQu_0CdnIv1Q1YnvUBTQ-YR_YKO1z05dpnuPeJDhdB1BGe7v8xpzTL2LCyN7RyBKsncsv0VHT4aRaTaTsct2XKl4tlysKBBa1s1E-8XWvR7ijD9Y7qBQhHXZm-7OqCmdheQo5lTH9KXzxUGPgsJbhO07ibpjNpmoYLInO0iK6PY/s1600/24.png",
+        "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjQlza9tvEjexEzm9RtbMdJx2NCTerpKBW_Mp8ucu5kOXUIV13RsgJ5cofLbFnIGNwamcHGG7ceIlDj3EtmdnaXRJIXSo2GQ6H_e-9_kuEShdZ00wvlxunxr4cG6yv0OFJGY5vET6n9jTzdNEwC79-UhQvGWjqTtodhfrHifVf_siDXnf1sDXJfJq52lUY/s1600/25.png",
+        "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEh3xp9YIrp5_J39YSa7142gz9smSpn99UESE15XP58lXZtu2oV6MufnrnrkizTVIjuuVNEI3C3h_ODp8T3KcOuH3GjyYrkmSC6heSTqN_tuY_ZEyd6pdByJIX2ASs3xTaOsgTKfkSJsE-OsvO2noRy2wcIjYVdPjgVwwNIxNbZ2TMoadnLl6shaKwbHmPU/s1600/26.png",
+        "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiiaxCt3ujlyNyFO6dCXw9jFBMjWDlNC570crrHlihYtZMoKAK59USJcp7TQFvjt6IvE5-t5YM8fTjRBbKYlIfWHrNPnOQDxxK0gpjKhED9QJoxLpgObJfNXGzyQFvnhEXZCrDx8p8GtZlUwBaVgezZlJYeL5vV5Qmn1XWebWu2P_FKvhFkp5XbgXw9Vho/s1600/27.png",
+        "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjwd_TYnDUEeGGaFaubF9Pf6h_1Apa52G76AicFFmnZppqc9nPfJTrPk_cmwISACfuKUZi3uhLbi8MiEOzlb7dxxbeoxDzlabWxvXIDG5-KiyB3CqwDRPorsORsxZ6B6S4-VdDMAduWBNhSKjf2Rbwg7JmHJk0z25HeOZHOcDacPmZezeCbmmgH3VCs0xA/s1600/28.png",
+        "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEizZ0I1QFRfAEujCm6QOKEVBpKrRrJTQOQTU1qh3zDuhOD4gRj8H53cqEeZs7BERUIjvygg-inlTVshyphenhyphen8kFWYYy7-NHPVtAxQ3X1qT7imiNnZVYQnL-56lgK5q1RDOvZR5sG9XqA9sK7bKkIjbv6p0akp6T5soXFrZSjubQdLLuSN88CrqbY8OJlqJ0rkA/s1600/29.png",
+        "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjRGM-x0Bkcjj6sZ8GVEkKQ-NjdRVby62QyEDJnDSbNNszoPhdWn5xWxEhiSPiDtEvbDA6EbDW5hf1KdmioIKb83Dk3VgVHTmm3EC7q6W8ebB2rIS_eV2wZ_5HPHabOijPbHcegRsHiyuZ4Ef3WRx1xah0zz1v47sksheBqD4U65VzcGj6gxB3drrmZj2o/s1600/30.png",
+        "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhSJv3ceYkBoUas2JcapfpyrAdkv8tgxd2fMKnWNG0QvqHYESO8JsLNrUyXvxnxPkQvUjV8XCrc7CWC8glIn9HZKObGsL4A2cfavfm8rBXgUnuC4OEPZe-q9xocpQhBFobGcP6oJRtva45LtrYM0rpPRZKoqNF1gd2LHu9uRTFHtvDYLzS9HIWa01H4jF8/s1600/31.png",
+        "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEg0cftvZugG5ekpt5tgxm2IzvJUd3V3R9vEj5lH65bBUyF8xYZPVxG-LMLpqq4WKOnRl5l0SiuLHV3-eP7zBRNMwYCtHLxue298LXPBweISWP5MTbbHisSOYMBQW0UYvi4uKhzWmbNK2kbctvtMGCxPi8VdXhNBpvQfv1L2fcbm5NjID1gsI0iePfmFZ3I/s1600/32.png",
+        "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiTCULLQaAqTdhGfuhKUlc9fOGlBD5dJVhtLKO9aebmPNxiw0HCTkVsk9rq2mr3thaJ_F1jmg50OUk1A5m5_4pEchadC2xC9pzHYWVLQLrvRFiInJG_wEEBODM-lapt9k6DYAffMN5B8H3rJRneIYetuBVe5yUxv2Ud1gxdG190zFg7LFNDsJSFLI62Skw/s1600/33.png",
+        "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjrqEiQa-14oqsE324HrX1uTicD7T-ymGCR9JBnw2s2Y7GCo4TPKMKFi2SL1llUq8Q4ZWPcLFa00UxSNnomZiAKztsQWEqbMGgSOz7iyLjtGeHKU5ZkjxUECLO0yk5-aaSDrgKe18qNW5826iT866NyXPE2zLWXyWPfZaUldEMz3g9ny9mfqZ2t9P-OJkE/s1600/34.png",
+        "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhi0JzZ093rDc1t8IEEpg3PDBW5FJVyNc3X-IU6NzyILeFhBRMiAmS4q3asS_hCNxyfzR7hWfuJD-e5ZNc1xlvVqxHQJA56T6rOMyfEOWSkf-KGsPeBKt5AYGRwE1KV5Wuhfl_gBEM09uAe0ARHZmiDTMr_NKcNuyGoiF_E_n5GhxgtM8oQk8_5_ugUoF0/s1600/35.png",
+        "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgDKyVZ9zrzyQR8VmgRC8-oXMHC-K3fInzK8IcMzbDA9OrEwCOp2X0k8uWNI5a5Mm1BN5Mizz0eGtmSqZhpOdT6SpqKsiT01Q_vPE80UmkB8NeGi_3ZL2BLAcdz7JLarADMKUEXLP4vXMkKvKsZjA1V6trhyphenhyphenCX17PamUwvLoi-Hek_117-Y0zUcZKS5GqQ/s1600/36.png",
+        "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjxKSywcVZAScVhB_IlkUzT1Sds0QNZjxJ17RF-RybmLXomer5TCE7zPUYheHCHDofj0ZgqVtwyb_8nbLVbFdczrZZqL_Y_5sNoxxF3hQ6XeygnwoIF5INBnYxS-hGkt5qcH9y-m_blba9v2uB4rvf0ccg6sehA8ypk0fcnV6mfye6boiTj1nwI_mWHqz4/s1600/37.png",
+        "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiM5lX4Wfm4hgVzODoL1A1CMgO7u4yLcbJ5CSIJxJSvJt2Zp-hsgwAJS9hCw-vMeuh4RBDjIc89xnMcM-6hnOC_Q-hZ8M2pUD4VVSYM1J_9xAan0bXGLDt3ZyoHDWcrHcNxF8jFRWTjVBGKFGqf41ZBSFdYEYSzaVuqagac8FdS4KAji-OEscHTpcgKe8E/s1600/38.png",
+        "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhQhq-lxxcGXwcoS5_-s5SuoFFujLUX3qqK1Yn_jLI13gGkbWcIrSG4lz4aVAUTRpI7tSUReqjSF0vCD0ddvYn-wNvaf4Wc65Dp96jGYq_1YRTqkr8DwAOr2ZH6-F1hT2cx9ugrqJUQhqyPWuG19nFhC9rhUrwhPlpLH69SqvIz_YIaXg913MogPSyTVJE/s1600/39.png",
+        "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhe5elPrcVofL5FOToLVzdn159XzwQuO6ol_ZUtR8uYwZnSsLmkSmFeJwi0tHGzGINQNlrquUL86HWrCYRF2Foko1-JmOtZlqXGFQ7e1s9ecjlLtoKs4gPa5YdyhdMJN5JAAf_vnhT68Cws8kyOMrlIF-FaECTKz9DEHLZC_KbPv0Vxr0nS6rCb7jyUImg/s1600/40.png",
+        "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjFEUjY5z7HK7qpGBadL5vzgzHwKqLHL0hja6mhdZwfrc1twuMyE0ky4FqcO_eIpu5fpobnl6OMdvhq3wKrgmnwNLWs_R7IpbJG4lO80lT3eWgtcWRtRYEMxxB6kGkoAgaOwbgCu7j1NV4qcUgKCqAtVGzs4r2v8KfHy1eYm0z_gMHRYjcnY3iVS_1nybc/s1600/41.png",
+        "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEi-KGHiLrRh6ERK2OAOu7OFkK8sCGE909VZl9SNqbeOa44tfn2wbVxtDB16XwXv6otsnVGuE7jKl75yuRgVbKsa2Psm04VhriYsvTDph5KAWiMbxYiBXI9rSI61bLeOeSpFjc08AtmZs7MsEVFKrgjRB5sCw3L9XLYnilRQLegIzOqCRWrPTzspia8uxMQ/s1600/42.png",
+        "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgDON3PgYd1PO1E22tvhDO_gUGMO7vAEmkmXMqy_rGTA_DJs2Es1DjZtOoapI5C1lgVz9i0uZoKj0BhsV7zstF1dFsk7wh5XvjCMBuKAbLnTSwpvXZ7IQKANRMsbM2Fm2W7JhxPFuiVg9PtJUeUENbMWNZBu-G5jMGnEMMwzJ-_mbcHfJPJOtGUYPKnAzI/s1600/43.png",
+        "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhHF3eAPcURJq4Kx3EpjBQ6csUn8aH8OhSi4hholjD9R42Zx1Og2dcDpbgJLm5NEpTPrYo_1w48SQtWphTn47Nr9unt6wrDzBYVcmiXvgwknQtGEHYny7msMYDDblp4uUebkjmpX0BElLwhIr7GZe1tA3Kua3L1P7ssA59P88SNIYMnt6pHtUSclGLjjrs/s1600/44.png",
+        "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEj2CD25u2yq8rG7ezmawtwTmvoPqFnrROSjaQRjZyPqRQU0FkCZ5MAB9eGTiFSjf2XjJlq9P5eL4ISYHnVX0TA7HCO7Ch4EMfSjMvJfCUYxB5XqKO4-TAxhv14bPYlWT3PAB2OJxWReqMkru2U03Q4K-pc_y6n52nQnHOdyaLgLhHfTCAlJJrVhAZtvl7Q/s1600/45.png",
+        "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEh7TOXlP4rTd9igmCUowLXdIt9zCwLzDOdwbq110s31t9KOKmGUQsOFwV-yb42pNnbFMGxmSL8peeEb3aEh8-NLhpaUBC3XVW4jgf921pi8oycAmKSP_iLKNp_inxgfhNwWu60rGqHMRdCrJ9TvoN2wIRm407YMfBOVAc0syM5iCQoAj7KJRdLOZlnFI8g/s1600/46.png",
+        "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjfwd8ZhyphenhyphenSdG6nBf9bAKcsU6gGJ7RLvzbd5wY4qTDn9r15rVChH0kybjBlsel1IdQCP3QsJHil9zz8ekFxqPEkSZorqob8JZi4_0EAXkS00MFT_sCDXyUv0yrZlPtnTS5d3h0AX3zF5gpS2nI3rh6p9NDBmV7iad4JSbzWwRCdXB2eWdiyWI0INaJJvHdg/s1600/47.png",
+        "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjLB0h-Tm3FlkK3eggI25B18KQ7y9MaKkc9v8Pypy8amvNLe5_WHyynuhKiq26UKGWphcJFHP_W2kpQyFKfiFrcib-PDeu-0jzGLHqZGlnrcLAELDkC2nV36zSFkbPGCFFoydmxHV6zmvPCEqjIVMLqdZFnbzoyP0OIXrDpH3pRNOaS_h62PTExuxf2mx8/s1600/48.png",
+        "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgyYoBf8FD4wutBd6Lsxna6_bLdWE3YsAyLxMXN0URWZ_n7i-dN8_0h1pBvlQAwTf6iFOFFgDcmjLeUqThEuIS6S3ypqq9QRUH3jbLrEqaIbgetbnm69pyaxKLFW1hbsdyP9dXV2G7mbbPBYdJDOR_H_Ug17SFY7gNRfw_HkqN4DSA5TgnhA2ilZQFL-PY/s1600/49.png",
+        "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiOe6xwTzFc5tiboQWTu7QUbaknr-t_rY51SuPrznyhyxhUpXnzoLufX6ZBLXFVKOWVs9-0FgaZArgFmOqrUaTxqt1yzHEgEwMdoWom6BvMbIeEN7Nn3VcUzeBRcQFtVMXZ7nETpJcDXE3Prw5qI7ANKB5jVoitZLxMbJVbRBDC8EHopl9kX5FIVvFuVAE/s1600/50.png"
+    ];
+
+    let currentRoomId = null; 
+    let myPlayerId = null; 
+    let isHost = false;
+    let myDuckIndex = 0; 
+    let isReady = false;
+    let timerInterval = null;
+    let localQuestions = []; 
+    let currentDisplayOrder = [0, 1, 2, 3]; 
+    let playerSelectedIndices = [];
+
+    let soundEnabled = true;
+    let lastRoomStatus = 'lobby'; 
+    const sounds = {
+        cheer: new Audio('/duavit/cheer.mp3'),
+        start: new Audio('/duavit/airhorn.mp3'),
+        duck0: new Audio('/duavit/duck0.mp3'),
+        duck1: new Audio('/duavit/duck1.mp3'),
+        duck2: new Audio('/duavit/duck2.mp3')
+    };
+
+    function playSFX(name) {
+        if (!soundEnabled) return;
+        const audio = sounds[name];
+        if (audio) {
+            audio.currentTime = 0;
+            audio.play().catch(e => console.log("Không thể tự động phát nhạc: ", e));
+        }
+    }
+
+    function toggleSound() {
+        soundEnabled = !soundEnabled;
+        const icon = soundEnabled ? "🔊" : "🔇";
+        document.querySelectorAll('.sound-toggle-btn').forEach(btn => {
+            btn.innerHTML = icon;
+        });
+        triggerNotification(soundEnabled ? "Đã bật âm thanh phòng đua!" : "Đã tắt âm thanh phòng đua!", "success");
+    }
+
+    setInterval(() => {
+        const currentScreen = document.querySelector('.screen.active');
+        if (!currentScreen) return;
+        const screenId = currentScreen.id;
+        if (['screen-host-lobby', 'screen-player-lobby', 'screen-host-game', 'screen-player-game'].includes(screenId)) {
+            const randDuck = 'duck' + Math.floor(Math.random() * 3);
+            playSFX(randDuck);
+        }
+    }, 15000);
+
+    function triggerNotification(message, type = 'success') {
+        let c = document.getElementById('toast-container');
+        if(!c) {
+            c = document.createElement('div');
+            c.id = 'toast-container';
+            document.body.appendChild(c);
+        }
+        const t = document.createElement('div'); t.className = `toast-item ${type}`; t.innerText = message;
+        c.appendChild(t); 
+        setTimeout(() => { t.style.animation = 'slideOutToast 0.2s forwards'; setTimeout(() => t.remove(), 200); }, 3000);
+    }
+    
+    function switchScreen(id) { 
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); 
+        document.getElementById(id).classList.add('active'); 
+    }
+    
+    const decoDucks = document.getElementById('home-deco-ducks');
+    if(decoDucks) {
+        decoDucks.innerHTML = '';
+        let shuffled = [...duckImages].sort(() => 0.5 - Math.random());
+        let selectedDucks = shuffled.slice(0, 6);
+        selectedDucks.forEach((src) => {
+            let img = document.createElement('img');
+            img.src = src; img.style.width = '48px'; img.style.height = '48px'; img.style.objectFit = 'contain';
+            img.className = 'floating-duck-gentle';
+            decoDucks.appendChild(img);
+        });
+    }
+
+    const playerDuckSelector = document.getElementById('player-duck-selector');
+    duckImages.forEach((url, idx) => {
+        let div = document.createElement('div'); div.className = 'duck-option';
+        div.innerHTML = `<img src="${url}">`;
+        div.onclick = () => {
+            document.querySelectorAll('.duck-option').forEach(el => { el.style.borderColor='var(--border)'; el.style.background='white'; });
+            div.style.borderColor = 'var(--secondary)'; div.style.background = '#f0f9ff';
+            myDuckIndex = idx; autoSavePlayerInfo();
+            document.getElementById('header-my-duck').src = url; 
         };
+        playerDuckSelector.appendChild(div);
+    });
 
-        onAuthStateChanged(auth, (user) => {
-            if (user) {
-                userId = user.uid;
-                document.getElementById('playerNameInput').value = myName;
-                selectDuck(selectedDuckIdx);
+    function renderQuestionsTable() {
+        const tbody = document.getElementById('q-table-body'); tbody.innerHTML = '';
+        const badge = document.getElementById('total-questions-badge');
+        if(badge) badge.innerText = localQuestions.length;
+
+        localQuestions.forEach((q, idx) => {
+            if (!q.qImg) q.qImg = "";
+            if (!q.type) q.type = "single";
+            if (!q.optionImgs) q.optionImgs = ["", "", "", ""];
+
+            const isTF = (q.type === 'boolean');
+
+            tbody.innerHTML += `
+                <tr>
+                    <td style="font-weight: 800; color: var(--text-muted); text-align: center; vertical-align: middle;">${idx + 1}</td>
+                    <td>
+                        <select onchange="changeQuestionType(${idx}, this.value)" style="font-size: 11px; height: 32px;">
+                            <option value="single" ${q.type === 'single' ? 'selected' : ''}>Trắc nghiệm 1 đáp án</option>
+                            <option value="multiple" ${q.type === 'multiple' ? 'selected' : ''}>Trắc nghiệm nhiều đáp án</option>
+                            <option value="boolean" ${q.type === 'boolean' ? 'selected' : ''}>Đúng / Sai</option>
+                        </select>
+                    </td>
+                    <td>
+                        <input type="text" value="${q.q || ''}" onchange="localQuestions[${idx}].q=this.value; saveDirectHostSettings();" placeholder="Nội dung câu hỏi">
+                        <div class="media-input-group">
+                            <input type="text" value="${q.qImg || ''}" onchange="localQuestions[${idx}].qImg=this.value; saveDirectHostSettings();" placeholder="Link ảnh">
+                            <button class="btn-outline" onclick="triggerFileInput('qImg', ${idx})">📁</button>
+                            <input type="file" id="file-qImg-${idx}" accept="image/*" style="display:none;" onchange="uploadRowImage(event, 'qImg', ${idx})">
+                        </div>
+                    </td>
+                    <td>
+                        <input type="text" value="${q.options[0] || ''}" onchange="localQuestions[${idx}].options[0]=this.value; saveDirectHostSettings();" placeholder="Đáp án A/Đúng" ${isTF ? 'readonly' : ''}>
+                        <div class="media-input-group" style="${isTF ? 'display:none;' : ''}">
+                            <input type="text" value="${q.optionImgs[0] || ''}" onchange="localQuestions[${idx}].optionImgs[0]=this.value; saveDirectHostSettings();" placeholder="Ảnh A">
+                            <button class="btn-outline" onclick="triggerFileInput('opt0', ${idx})">📁</button>
+                            <input type="file" id="file-opt0-${idx}" accept="image/*" style="display:none;" onchange="uploadRowImage(event, 'opt0', ${idx})">
+                        </div>
+                    </td>
+                    <td>
+                        <input type="text" value="${q.options[1] || ''}" onchange="localQuestions[${idx}].options[1]=this.value; saveDirectHostSettings();" placeholder="Đáp án B/Sai" ${isTF ? 'readonly' : ''}>
+                        <div class="media-input-group" style="${isTF ? 'display:none;' : ''}">
+                            <input type="text" value="${q.optionImgs[1] || ''}" onchange="localQuestions[${idx}].optionImgs[1]=this.value; saveDirectHostSettings();" placeholder="Ảnh B">
+                            <button class="btn-outline" onclick="triggerFileInput('opt1', ${idx})">📁</button>
+                            <input type="file" id="file-opt1-${idx}" accept="image/*" style="display:none;" onchange="uploadRowImage(event, 'opt1', ${idx})">
+                        </div>
+                    </td>
+                    <td>
+                        <input type="text" value="${q.options[2] || ''}" onchange="localQuestions[${idx}].options[2]=this.value; saveDirectHostSettings();" placeholder="Đáp án C" ${isTF ? 'disabled style="background:#e2e8f0"' : ''}>
+                        <div class="media-input-group" style="${isTF ? 'display:none;' : ''}">
+                            <input type="text" value="${q.optionImgs[2] || ''}" onchange="localQuestions[${idx}].optionImgs[2]=this.value; saveDirectHostSettings();" placeholder="Ảnh C">
+                            <button class="btn-outline" onclick="triggerFileInput('opt2', ${idx})">📁</button>
+                            <input type="file" id="file-opt2-${idx}" accept="image/*" style="display:none;" onchange="uploadRowImage(event, 'opt2', ${idx})">
+                        </div>
+                    </td>
+                    <td>
+                        <input type="text" value="${q.options[3] || ''}" onchange="localQuestions[${idx}].options[3]=this.value; saveDirectHostSettings();" placeholder="Đáp án D" ${isTF ? 'disabled style="background:#e2e8f0"' : ''}>
+                        <div class="media-input-group" style="${isTF ? 'display:none;' : ''}">
+                            <input type="text" value="${q.optionImgs[3] || ''}" onchange="localQuestions[${idx}].optionImgs[3]=this.value; saveDirectHostSettings();" placeholder="Ảnh D">
+                            <button class="btn-outline" onclick="triggerFileInput('opt3', ${idx})">📁</button>
+                            <input type="file" id="file-opt3-${idx}" accept="image/*" style="display:none;" onchange="uploadRowImage(event, 'opt3', ${idx})">
+                        </div>
+                    </td>
+                    <td><input type="text" value="${q.correct || '1'}" onchange="localQuestions[${idx}].correct=this.value; saveDirectHostSettings();" style="width: 100%; text-align: center;" placeholder="VD: 1 hoặc 1,2"></td>
+                    <td><button class="btn-outline" style="padding: 6px 12px; font-size:12px; color: var(--danger); border-color: var(--border); border-radius:8px;" onclick="localQuestions.splice(${idx},1); renderQuestionsTable(); saveDirectHostSettings();">Xóa</button></td>
+                </tr>`;
+        });
+    }
+
+    function changeQuestionType(idx, value) {
+        localQuestions[idx].type = value;
+        if (value === 'boolean') {
+            localQuestions[idx].options[0] = "Đúng";
+            localQuestions[idx].options[1] = "Sai";
+            localQuestions[idx].options[2] = "";
+            localQuestions[idx].options[3] = "";
+            localQuestions[idx].correct = "1"; 
+        } else if (value === 'single' || value === 'multiple') {
+            if (localQuestions[idx].options[0] === "Đúng" && localQuestions[idx].options[1] === "Sai") {
+                localQuestions[idx].options[0] = "";
+                localQuestions[idx].options[1] = "";
+            }
+        }
+        renderQuestionsTable();
+        saveDirectHostSettings();
+    }
+
+    function triggerFileInput(type, index) { document.getElementById(`file-${type}-${index}`).click(); }
+
+    function uploadRowImage(event, type, index) {
+        let file = event.target.files[0];
+        if (!file) return;
+        let reader = new FileReader();
+        reader.onload = function(e) {
+            let base64 = e.target.result;
+            if (type === 'qImg') { localQuestions[index].qImg = base64; } 
+            else { 
+                let optIdx = parseInt(type.replace('opt', '')); 
+                if (!localQuestions[index].optionImgs) localQuestions[index].optionImgs = ["", "", "", ""]; 
+                localQuestions[index].optionImgs[optIdx] = base64; 
+            }
+            triggerNotification("Đã tải ảnh lên!"); 
+            renderQuestionsTable();
+            saveDirectHostSettings();
+        };
+        reader.readAsDataURL(file);
+    }
+
+    function showCreateRoom() {
+        currentRoomId = Math.floor(10000 + Math.random()*90000).toString(); isHost = true;
+        localQuestions = [
+            { 
+                q: "Tìm x biết: x + 15 = 40. Giá trị của x là:", 
+                qImg: "", 
+                type: "single", 
+                options: ["25", "30", "15", "35"], 
+                optionImgs: ["", "", "", ""], 
+                correct: "1" 
+            },
+            { 
+                q: "Những từ nào sau đây là từ chỉ hoạt động?", 
+                qImg: "", 
+                type: "multiple", 
+                options: ["Chạy bộ", "Bàn học", "Đọc sách", "Cái cây"], 
+                optionImgs: ["", "", "", ""], 
+                correct: "1,3" 
+            },
+            { 
+                q: "Trái Đất quay quanh Mặt Trời. Phát biểu này là đúng hay sai?", 
+                qImg: "", 
+                type: "boolean", 
+                options: ["Đúng", "Sai", "", ""], 
+                optionImgs: ["", "", "", ""], 
+                correct: "1" 
+            }
+        ];
+        
+        db.ref('rooms/'+currentRoomId).set({
+            settings: { timeLimit: 300, targetScore: 0, shuffleAns: true, shuffleQs: true, teamMode: false, teamCount: 2, specialMode: 'normal', loopQuestions: true, attackDefenseMode: false },
+            state: { status: 'lobby', timeLeft: 300, locked: false, bonusMode: { type: 'normal' } }, questions: localQuestions
+        }).then(() => {
+            // Thiết lập dọn dẹp phòng chơi tự động khi chủ phòng thoát trình duyệt
+            db.ref('rooms/'+currentRoomId).onDisconnect().remove();
+
+            document.getElementById('host-room-id-display').innerText = currentRoomId;
+            switchScreen('screen-host-lobby'); listenToRoom();
+            renderQuestionsTable();
+        });
+    }
+
+    function addBlankQuestion() { 
+        localQuestions.push({q:"", qImg:"", type:"single", options:["","","",""], optionImgs:["","","",""], correct:"1"}); 
+        renderQuestionsTable(); 
+        saveDirectHostSettings();
+    }
+    
+    function deleteAllQuestions() { 
+        localQuestions = []; 
+        renderQuestionsTable(); 
+        triggerNotification("Đã xóa tất cả câu hỏi", "success"); 
+        saveDirectHostSettings();
+    }
+
+    function handleExcelUpload(event) {
+        let file = event.target.files[0]; if(!file) return;
+        let reader = new FileReader();
+        reader.onload = function(event) {
+            let data = new Uint8Array(event.target.result);
+            try {
+                let workbook = XLSX.read(data, {type: 'array'}); 
+                let worksheet = workbook.Sheets[workbook.SheetNames[0]];
+                let rows = XLSX.utils.sheet_to_json(worksheet, {header: 1}); 
+                let count = 0; 
+                let newQuestions = [];
+                
+                rows.forEach((row, index) => {
+                    if (index === 0 && String(row[0]).toLowerCase().includes('câu hỏi')) return;
+                    if(row.length >= 6 && row[0]) {
+                        newQuestions.push({
+                            type: "single",
+                            q: String(row[0]).trim(), 
+                            qImg: String(row[1] || '').toLowerCase().startsWith('http') ? String(row[1]).trim() : '', 
+                            options: [ String(row[2] || '').trim(), String(row[4] || '').trim(), String(row[6] || '').trim(), String(row[8] || '').trim() ],
+                            optionImgs: ["", "", "", ""], 
+                            correct: String(row[10] || '1').trim()
+                        }); 
+                        count++;
+                    }
+                });
+                if(count > 0) { 
+                    localQuestions = localQuestions.concat(newQuestions); 
+                    triggerNotification(`Đã tải lên thành công ${count} câu hỏi!`); 
+                    renderQuestionsTable(); 
+                    saveDirectHostSettings();
+                } else { 
+                    triggerNotification("Không tìm thấy câu hỏi hợp lệ trong Excel.", "error"); 
+                }
+            } catch (err) { triggerNotification("Lỗi đọc tập tin Excel!", "error"); }
+        }; reader.readAsArrayBuffer(file); event.target.value = '';
+    }
+
+    function processTextImport() {
+        const text = document.getElementById('import-excel-text').value; let count=0;
+        text.trim().split('\n').forEach(line => {
+            let cols = line.includes('\t') ? line.split('\t') : line.split('|'); cols = cols.map(c=>c.trim());
+            if(cols.length >= 6) { 
+                localQuestions.push({ q: cols[0], qImg: "", type: "single", options: [cols[1], cols[2], cols[3], cols[4]], optionImgs: ["", "", "", ""], correct: String(cols[5] || '1').trim() }); 
+                count++; 
+            }
+        });
+        if(count>0) { 
+            triggerNotification(`Đã nạp ${count} câu hỏi!`); 
+            document.getElementById('import-excel-text').value=''; 
+            renderQuestionsTable(); 
+            saveDirectHostSettings();
+        } else triggerNotification("Định dạng chưa đúng! Hãy kiểm tra kỹ ký tự | ngăn cách.", "error");
+    }
+    
+    function saveDirectHostSettings() {
+        if (!currentRoomId) return;
+        db.ref('rooms/'+currentRoomId).update({
+            'settings/timeLimit': parseInt(document.getElementById('cfg-time').value) || 300,
+            'settings/targetScore': parseInt(document.getElementById('cfg-target-score').value) || 0,
+            'settings/shuffleAns': document.getElementById('cfg-shuffle-ans').checked,
+            'settings/shuffleQs': document.getElementById('cfg-shuffle-qs').checked,
+            'settings/teamMode': document.getElementById('cfg-team-mode').value === 'true',
+            'settings/teamCount': parseInt(document.getElementById('cfg-team-count').value) || 2,
+            'settings/specialMode': document.getElementById('cfg-special-mode').value,
+            'settings/loopQuestions': document.getElementById('cfg-loop-questions').checked,
+            'settings/attackDefenseMode': document.getElementById('cfg-atk-def').value === 'true',
+            'questions': localQuestions
+        });
+    }
+
+    function kickPlayer(pId) { db.ref(`rooms/${currentRoomId}/players/${pId}`).remove(); }
+    function closeRoom() { db.ref(`rooms/${currentRoomId}`).remove().then(() => window.location.reload()); }
+
+    function exportToExcelXLSX() {
+        let ws_data = [["Câu hỏi", "Link ảnh câu hỏi", "Đáp án A", "Ảnh A", "Đáp án B", "Ảnh B", "Đáp án C", "Ảnh C", "Đáp án D", "Ảnh D", "Cột đúng"]];
+        localQuestions.forEach(q => { ws_data.push([q.q, q.qImg || "", q.options[0], q.optionImgs[0] || "", q.options[1], q.optionImgs[1] || "", q.options[2], q.optionImgs[2] || "", q.options[3], q.optionImgs[3] || "", q.correct]); });
+        let wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(ws_data), "NganHangCauHoi");
+        XLSX.writeFile(wb, "ngan_hang_cau_hoi_mau.xlsx");
+    }
+
+    function startGame() {
+        if(localQuestions.length === 0) return triggerNotification("Vui lòng nạp câu hỏi trước khi bắt đầu!", "error");
+        saveDirectHostSettings();
+
+        db.ref(`rooms/${currentRoomId}`).once('value', snap => {
+            let data = snap.val();
+            let updates = { 
+                'state/status': 'playing', 
+                'state/timeLeft': data.settings.timeLimit, 
+                'state/locked': false, 
+                'state/bonusMode': { type: 'normal' },
+                'state/startTime': Date.now()
+            };
+            
+            let qOrder = Array.from({length: data.questions.length}, (_, i) => i);
+            if (data.settings.shuffleQs) qOrder.sort(() => Math.random() - 0.5);
+            updates['state/qOrder'] = qOrder;
+
+            if(data.settings.teamMode && data.players) {
+                let pKeys = Object.keys(data.players); pKeys.sort(() => Math.random() - 0.5); 
+                pKeys.forEach((k, idx) => { updates[`players/${k}/team`] = (idx % data.settings.teamCount) + 1; });
+            } else if (data.players) {
+                Object.keys(data.players).forEach(k => { updates[`players/${k}/team`] = null; });
+            }
+            
+            if(data.players) {
+                Object.keys(data.players).forEach(k => { 
+                    updates[`players/${k}/score`] = 0; updates[`players/${k}/qIndex`] = 0; 
+                    updates[`players/${k}/streak`] = 0; updates[`players/${k}/penalty`] = false; 
+                    updates[`players/${k}/wrongQuestions`] = ""; 
+                    updates[`players/${k}/correctCount`] = 0;
+                    updates[`players/${k}/wrongCount`] = 0;
+                    updates[`players/${k}/duration`] = null;
+                    updates[`players/${k}/lastScoreChangeTime`] = Date.now();
+                    updates[`players/${k}/atkDefCharges`] = 0;
+                    updates[`players/${k}/lastChargedScore`] = 0;
+                    updates[`players/${k}/defendUntil`] = 0;
+                });
+            }
+            db.ref(`rooms/${currentRoomId}`).update(updates).then(() => startGlobalTimer(data.settings.timeLimit));
+        });
+    }
+
+    function startGlobalTimer(limit) {
+        clearInterval(timerInterval); let timeLeft = limit; db.ref(`rooms/${currentRoomId}/state/timeLeft`).set(timeLeft);
+        timerInterval = setInterval(() => {
+            timeLeft--;
+            if(timeLeft < 0) { clearInterval(timerInterval); endGameEarly(); } 
+            else { db.ref(`rooms/${currentRoomId}/state/timeLeft`).set(timeLeft); }
+        }, 1000);
+    }
+
+    function endGameEarly() {
+        clearInterval(timerInterval);
+        db.ref(`rooms/${currentRoomId}/state/status`).set('finished');
+    }
+
+    function triggerHostBonus(type) {
+        if (!currentRoomId) return;
+        if (type === 'x2') {
+            const expireTime = Date.now() + 20000;
+            db.ref(`rooms/${currentRoomId}/state/bonusMode`).set({
+                type: 'x2',
+                expireAt: expireTime
+            }).then(() => {
+                triggerNotification("Đã kích hoạt X2 Điểm trong 20 giây!", "success");
+            });
+        } else if (type === 'x3') {
+            db.ref(`rooms/${currentRoomId}/state/bonusMode`).set({
+                type: 'x3',
+                active: true
+            }).then(() => {
+                triggerNotification("Đã kích hoạt X3 Điểm cho câu trả lời kế tiếp!", "success");
+            });
+        }
+    }
+
+    function toggleAnsweringLock() {
+        if (!currentRoomId) return;
+        db.ref(`rooms/${currentRoomId}/state/locked`).once('value', snap => {
+            const currentLock = snap.val() || false;
+            db.ref(`rooms/${currentRoomId}/state/locked`).set(!currentLock).then(() => {
+                triggerNotification(!currentLock ? "Đường đua đã bị khóa!" : "Đường đua đã được mở khóa!", "warning");
+            });
+        });
+    }
+
+    function renderSummary(players, teamMode, fullData) {
+        let pArr = []; if(players) pArr = Object.values(players);
+        let htmlPodium = ''; let htmlList = '';
+        
+        if(teamMode) {
+            let teams = {};
+            pArr.forEach(p => { 
+                if(!p.team) p.team = 1; 
+                if(!teams[p.team]) teams[p.team] = { id: p.team, score: 0, members: [] };
+                teams[p.team].score += (p.score || 0); teams[p.team].members.push(p.name);
+            });
+            let sortedTeams = Object.values(teams).sort((a,b) => b.score - a.score);
+            
+            sortedTeams.forEach((t, i) => { 
+                htmlList += `
+                    <div class="summary-row ${i<3 ? 'top':''}">
+                        <span>Hạng ${i+1}: Đội ${t.id} (${t.members.length} thành viên)</span>
+                        <div style="flex-grow: 1; border-bottom: 2px dotted var(--border); margin: 0 20px; align-self: center;"></div>
+                        <span><strong>${t.score}</strong> Điểm</span>
+                    </div>`; 
+            });
+            const ranks = [2, 1, 3]; 
+            ranks.forEach(r => {
+                if(sortedTeams[r-1]) {
+                    const badge = r === 1 ? "🥇" : r === 2 ? "🥈" : "🥉";
+                    htmlPodium += `
+                        <div class="podium-item rank-${r}">
+                            <img src="${duckImages[r]}" class="podium-duck">
+                            <div class="podium-bar">
+                                <span class="rank-num">${badge}</span>
+                            </div>
+                            <div style="font-weight:800; margin-top:5px; font-size:12px; text-align:center;">Đội ${sortedTeams[r-1].id}</div>
+                            <div style="font-size:11px; color: var(--text-muted); font-weight: 700;">${sortedTeams[r-1].score} điểm</div>
+                        </div>`;
+                }
+            });
+        } else {
+            let sorted = pArr.sort((a, b) => {
+                let scoreA = a.score || 0;
+                let scoreB = b.score || 0;
+                if (scoreB !== scoreA) {
+                    return scoreB - scoreA;
+                }
+                let startTimeVal = (fullData && fullData.state && fullData.state.startTime) ? fullData.state.startTime : 0;
+                let durA = a.duration || ((a.lastScoreChangeTime || 0) - startTimeVal);
+                let durB = b.duration || ((b.lastScoreChangeTime || 0) - startTimeVal);
+                return durA - durB; 
+            });
+
+            sorted.forEach((p, i) => { 
+                let durationSec = p.duration ? Math.round(p.duration / 1000) : 0;
+                if (!durationSec && fullData && fullData.state && fullData.state.startTime && p.lastScoreChangeTime) {
+                    durationSec = Math.round((p.lastScoreChangeTime - fullData.state.startTime) / 1000);
+                }
+                if (durationSec < 0) durationSec = 0;
+                let min = Math.floor(durationSec / 60);
+                let sec = durationSec % 60;
+                let timeStr = `${min}:${sec < 10 ? '0' : ''}${sec}`;
+
+                let correct = p.correctCount || 0;
+                let wrong = p.wrongCount || 0;
+
+                htmlList += `
+                    <div class="summary-row ${i<3 ? 'top':''}" style="font-size: 16px; padding: 12px 24px;">
+                        <div style="display: flex; flex-direction: column; align-items: flex-start; text-align: left;">
+                            <span>Hạng ${i+1}: <strong>${p.name}</strong></span>
+                            <span style="font-size: 12px; color: var(--text-muted); font-weight: 700; margin-top: 2px;">
+                                Thời gian: ${timeStr} | Đúng: <span style="color:var(--success)">${correct}</span> - Sai: <span style="color:var(--danger)">${wrong}</span>
+                            </span>
+                        </div>
+                        <div style="flex-grow: 1; border-bottom: 2px dotted var(--border); margin: 0 20px; align-self: center;"></div>
+                        <span><strong>${p.score||0}</strong> Điểm</span>
+                    </div>`; 
+            });
+            const ranks = [2, 1, 3];
+            ranks.forEach(r => {
+                if(sorted[r-1]) {
+                    const badge = r === 1 ? "🥇" : r === 2 ? "🥈" : "🥉";
+                    htmlPodium += `
+                        <div class="podium-item rank-${r}">
+                            <img src="${duckImages[sorted[r-1].duckIndex]}" class="podium-duck">
+                            <div class="podium-bar">
+                                <span class="rank-num">${badge}</span>
+                            </div>
+                            <div style="font-weight:800; margin-top:5px; font-size:12px; text-align:center; max-width: 120px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${sorted[r-1].name}</div>
+                            <div style="font-size:11px; color: var(--text-muted); font-weight: 700;">${sorted[r-1].score||0} điểm</div>
+                        </div>`;
+                }
+            });
+        }
+        
+        document.getElementById('podium-container').innerHTML = htmlPodium;
+        document.getElementById('summary-list').innerHTML = htmlList;
+        
+        document.getElementById('btn-replay').style.display = isHost ? 'inline-flex' : 'none';
+        document.getElementById('btn-export-res').style.display = isHost ? 'inline-flex' : 'none';
+        document.getElementById('btn-host-close').style.display = isHost ? 'inline-flex' : 'none';
+        document.getElementById('btn-leave-game').style.display = !isHost ? 'inline-flex' : 'none';
+    }
+
+    function replayGame() {
+        const hostPool = document.getElementById('race-pool');
+        if (hostPool) hostPool.style.transform = `translateX(0px)`;
+        const playerPool = document.getElementById('player-race-pool');
+        if (playerPool) playerPool.style.transform = `translateX(0px)`;
+
+        db.ref(`rooms/${currentRoomId}`).once('value', snap => {
+            let updates = { 'state/status': 'lobby', 'state/locked': false, 'state/bonusMode': { type: 'normal' } }; 
+            let data = snap.val();
+            if(data.players) {
+                Object.keys(data.players).forEach(k => { 
+                    updates[`players/${k}/score`] = 0; updates[`players/${k}/isReady`] = false; 
+                    updates[`players/${k}/qIndex`] = 0; updates[`players/${k}/streak`] = 0; updates[`players/${k}/penalty`] = false; 
+                    updates[`players/${k}/wrongQuestions`] = ""; 
+                    updates[`players/${k}/customQOrder`] = null;
+                    updates[`players/${k}/correctCount`] = 0;
+                    updates[`players/${k}/wrongCount`] = 0;
+                    updates[`players/${k}/lastScoreChangeTime`] = Date.now();
+                    updates[`players/${k}/atkDefCharges`] = 0;
+                    updates[`players/${k}/lastChargedScore`] = 0;
+                    updates[`players/${k}/defendUntil`] = 0;
+                });
+            }
+            db.ref(`rooms/${currentRoomId}`).update(updates);
+        });
+    }
+
+    function returnToLobby() { 
+        if(isHost) { replayGame(); } 
+        else { switchScreen('screen-player-lobby'); }
+    }
+
+    function exportResults() {
+        db.ref(`rooms/${currentRoomId}`).once('value', snap => {
+            let data = snap.val(); if(!data.players) return;
+            let pArr = Object.values(data.players).sort((a,b) => {
+                let scoreA = a.score || 0;
+                let scoreB = b.score || 0;
+                if (scoreB !== scoreA) return scoreB - scoreA;
+                return (a.lastScoreChangeTime || 0) - (b.lastScoreChangeTime || 0);
+            });
+            let ws_data = [["Xếp hạng", "Tên Người Chơi", "Điểm Số", "Đúng", "Sai", "Đội"]];
+            pArr.forEach((p, i) => { ws_data.push([i+1, p.name, p.score||0, p.correctCount||0, p.wrongCount||0, p.team||'Không']); });
+            let ws = XLSX.utils.aoa_to_sheet(ws_data); let wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "KetQua"); XLSX.writeFile(wb, "ket_qua_dua_vit.xlsx");
+        });
+    }
+
+    function joinRoom() {
+        const id = document.getElementById('join-room-id').value.trim(); if(!id) return;
+        db.ref('rooms/'+id).once('value').then(snap => {
+            if(!snap.exists()) return triggerNotification("Phòng này không tồn tại!", "error");
+            currentRoomId = id; myPlayerId = 'p_'+Math.random().toString(36).substr(2,9); isHost = false;
+            document.getElementById('player-room-id-display').innerText = id;
+            
+            myDuckIndex = Math.floor(Math.random() * duckImages.length);
+            document.getElementById('header-my-duck').src = duckImages[myDuckIndex];
+            
+            document.querySelectorAll('.duck-option').forEach((el, idx) => {
+                if(idx === myDuckIndex) { el.style.borderColor = 'var(--secondary)'; el.style.background = '#f0f9ff'; }
+            });
+            
+            db.ref(`rooms/${currentRoomId}/players/${myPlayerId}`).set({ 
+                name: 'Học sinh', 
+                duckIndex: myDuckIndex, 
+                isReady: false, 
+                score: 0, 
+                qIndex: 0, 
+                streak: 0, 
+                penalty: false, 
+                wrongQuestions: "", 
+                correctCount: 0, 
+                wrongCount: 0, 
+                lastScoreChangeTime: Date.now(),
+                atkDefCharges: 0,
+                lastChargedScore: 0,
+                defendUntil: 0
+            }).then(() => {
+                db.ref(`rooms/${currentRoomId}/players/${myPlayerId}`).onDisconnect().remove();
+                switchScreen('screen-player-lobby'); listenToRoom();
+            });
+        });
+    }
+
+    function autoSavePlayerInfo() {
+        if(!myPlayerId) return;
+        const name = document.getElementById('player-name-input').value.trim() || 'Học sinh';
+        db.ref(`rooms/${currentRoomId}/players/${myPlayerId}`).update({ name: name, duckIndex: myDuckIndex });
+    }
+
+    function toggleReady() {
+        isReady = !isReady; const btn = document.getElementById('btn-player-ready');
+        btn.innerText = isReady ? "ĐÃ SẴN SÀNG" : "SẴN SÀNG"; 
+        btn.style.background = isReady ? 'var(--success)' : 'var(--primary)';
+        db.ref(`rooms/${currentRoomId}/players/${myPlayerId}`).update({ isReady: isReady });
+    }
+
+    function leaveRoom() { db.ref(`rooms/${currentRoomId}/players/${myPlayerId}`).remove().then(() => window.location.reload()); }
+
+    function submitAnswer(btnIdx) {
+        db.ref(`rooms/${currentRoomId}`).once('value', snap => {
+            const data = snap.val(); if(data.state.status !== 'playing') return;
+            
+            if (data.state.locked) {
+                triggerNotification("Đường đua hiện đang bị khóa bởi Giáo viên!", "error");
+                return;
+            }
+
+            const myInfo = data.players[myPlayerId];
+            if (!myInfo || myInfo.penalty) return; 
+
+            const myQIndex = myInfo.qIndex || 0;
+            let currentQOrder = myInfo.customQOrder || data.state.qOrder;
+            
+            const mappedIndex = currentQOrder ? currentQOrder[myQIndex] : myQIndex;
+            const q = data.questions[mappedIndex];
+            if(!q) return; 
+
+            const targetScore = data.settings.targetScore > 0 ? data.settings.targetScore : data.questions.length;
+            let isFinished = false;
+            if (data.settings.targetScore > 0) {
+                if ((myInfo.score || 0) >= targetScore) isFinished = true;
+            } else {
+                let limit = currentQOrder ? currentQOrder.length : data.questions.length;
+                let wrongList = myInfo.wrongQuestions ? myInfo.wrongQuestions.split(',').filter(x => x !== "") : [];
+                if (myQIndex >= limit && wrongList.length === 0) isFinished = true;
+            }
+            if (isFinished) return;
+
+            const actualIdx = currentDisplayOrder[btnIdx]; 
+            let correctAnswers = String(q.correct).toUpperCase().split(',').map(s => s.trim());
+            let selectedIdxStr = String(actualIdx + 1);
+            let selectedCharStr = ['A','B','C','D'][actualIdx];
+            
+            let isCorrect = correctAnswers.includes(selectedIdxStr) || correctAnswers.includes(selectedCharStr);
+            processAnswerFeedback(isCorrect, data, myInfo, myQIndex, mappedIndex);
+        });
+    }
+
+    function toggleOptionSelect(btnIdx) {
+        const index = playerSelectedIndices.indexOf(btnIdx);
+        const btn = document.getElementById(`opt-btn-${btnIdx}`);
+        if (index > -1) {
+            playerSelectedIndices.splice(index, 1);
+            btn.classList.remove('selected');
+        } else {
+            playerSelectedIndices.push(btnIdx);
+            btn.classList.add('selected');
+        }
+    }
+
+    function submitMultipleChoiceAnswer() {
+        db.ref(`rooms/${currentRoomId}`).once('value', snap => {
+            const data = snap.val(); if(data.state.status !== 'playing') return;
+            
+            if (data.state.locked) {
+                triggerNotification("Đường đua hiện đang bị khóa bởi Giáo viên!", "error");
+                return;
+            }
+
+            const myInfo = data.players[myPlayerId];
+            if (!myInfo || myInfo.penalty) return;
+
+            const myQIndex = myInfo.qIndex || 0;
+            let currentQOrder = myInfo.customQOrder || data.state.qOrder;
+
+            const mappedIndex = currentQOrder ? currentQOrder[myQIndex] : myQIndex;
+            const q = data.questions[mappedIndex];
+            if(!q) return;
+            
+            const targetScore = data.settings.targetScore > 0 ? data.settings.targetScore : data.questions.length;
+            let isFinished = false;
+            if (data.settings.targetScore > 0) {
+                if ((myInfo.score || 0) >= targetScore) isFinished = true;
+            } else {
+                let limit = currentQOrder ? currentQOrder.length : data.questions.length;
+                let wrongList = myInfo.wrongQuestions ? myInfo.wrongQuestions.split(',').filter(x => x !== "") : [];
+                if (myQIndex >= limit && wrongList.length === 0) isFinished = true;
+            }
+            if (isFinished) return;
+
+            let correctAnswers = String(q.correct).toUpperCase().split(',').map(s => s.trim());
+            let actualCorrectIndices = []; 
+            
+            for (let i = 0; i < 4; i++) {
+                let char = ['A','B','C','D'][i];
+                let idxStr = String(i + 1);
+                if (correctAnswers.includes(idxStr) || correctAnswers.includes(char)) {
+                    actualCorrectIndices.push(i);
+                }
+            }
+
+            let userSelectedOriginalIndices = playerSelectedIndices.map(btnIdx => currentDisplayOrder[btnIdx]);
+            userSelectedOriginalIndices.sort();
+            actualCorrectIndices.sort();
+            
+            let isCorrect = (JSON.stringify(userSelectedOriginalIndices) === JSON.stringify(actualCorrectIndices));
+            processAnswerFeedback(isCorrect, data, myInfo, myQIndex, mappedIndex);
+        });
+    }
+
+    function processAnswerFeedback(isCorrect, data, myInfo, myQIndex, mappedIndex) {
+        let specialMode = data.settings.specialMode || 'normal';
+        let scoreChange = 0; 
+        let currentStreak = myInfo.streak || 0;
+        const msgBox = document.getElementById('player-status-msg');
+        let wrongList = myInfo.wrongQuestions ? myInfo.wrongQuestions.split(',').filter(x => x !== "") : [];
+        
+        let currentCorrectCount = myInfo.correctCount || 0;
+        let currentWrongCount = myInfo.wrongCount || 0;
+
+        let multiplier = 1;
+        const bonusMode = data.state.bonusMode || { type: 'normal' };
+        if (bonusMode.type === 'x2' && Date.now() < (bonusMode.expireAt || 0)) {
+            multiplier = 2;
+        } else if (bonusMode.type === 'x3' && bonusMode.active) {
+            multiplier = 3;
+            db.ref(`rooms/${currentRoomId}/state/bonusMode`).update({ active: false });
+        }
+
+        if(isCorrect) {
+            currentStreak++;
+            currentCorrectCount++;
+            if (specialMode === 'storm' && currentStreak >= 2) {
+                scoreChange = 2 * multiplier; 
+                msgBox.innerHTML = `Chính xác! Bão Tăng Tốc + Nhân điểm! (Chuỗi: ${currentStreak})`;
+            } else {
+                scoreChange = 1 * multiplier; 
+                msgBox.innerHTML = multiplier > 1 ? `Chính xác tuyệt vời! Nhân ${multiplier} điểm!` : "Chính xác! Bạn thật xuất sắc!";
+            }
+            msgBox.style.color = "var(--success)";
+        } else {
+            currentStreak = 0;
+            currentWrongCount++;
+            if (!wrongList.includes(String(mappedIndex))) {
+                wrongList.push(String(mappedIndex));
+            }
+            
+            if (specialMode === 'sudden_death') {
+                scoreChange = -1; msgBox.innerHTML = "Chưa đúng! Bị phạt: Di chuyển lùi & Khóa 3 giây!"; msgBox.style.color = "var(--danger)";
+                db.ref(`rooms/${currentRoomId}/players/${myPlayerId}`).update({ penalty: true });
+                setTimeout(() => { db.ref(`rooms/${currentRoomId}/players/${myPlayerId}`).update({ penalty: false }); }, 3000);
+            } else {
+                scoreChange = 0; msgBox.innerHTML = "Chưa chính xác! Hãy cố gắng ở câu sau nhé!"; msgBox.style.color = "var(--danger)";
+            }
+        }
+
+        document.querySelectorAll('.option-btn').forEach(b => { b.style.opacity='0.5'; b.disabled=true; });
+
+        setTimeout(() => {
+            let currentScore = myInfo.score || 0; 
+            let newScore = currentScore + scoreChange;
+            if (newScore < 0) newScore = 0; 
+            
+            let targetScore = data.settings.targetScore > 0 ? data.settings.targetScore : data.questions.length;
+            let currentQOrder = myInfo.customQOrder || data.state.qOrder;
+            let limit = currentQOrder ? currentQOrder.length : data.questions.length;
+
+            let isFinishedNow = false;
+            if (data.settings.targetScore > 0) {
+                if (newScore >= targetScore) isFinishedNow = true;
+            } else {
+                if (myQIndex + 1 >= limit && wrongList.length === 0) isFinishedNow = true;
+            }
+
+            let lastCharged = myInfo.lastChargedScore || 0;
+            let newCharges = myInfo.atkDefCharges || 0;
+            if (data.settings.attackDefenseMode) {
+                let diff = newScore - lastCharged;
+                if (diff >= 3) {
+                    let earned = Math.floor(diff / 3);
+                    newCharges += earned;
+                    lastCharged += earned * 3;
+                    triggerNotification(`Bạn vừa tích lũy thêm ${earned} lượt Tấn Công/Phòng Thủ!`, "warning");
+                }
+            }
+
+            let pUpdates = { 
+                qIndex: myQIndex + 1, 
+                score: newScore, 
+                streak: currentStreak,
+                wrongQuestions: wrongList.join(','),
+                correctCount: currentCorrectCount,
+                wrongCount: currentWrongCount,
+                lastScoreChangeTime: Date.now(),
+                atkDefCharges: newCharges,
+                lastChargedScore: lastCharged
+            };
+
+            if (isFinishedNow && data.state.startTime && !myInfo.duration) {
+                pUpdates.duration = Date.now() - data.state.startTime;
+            }
+
+            db.ref(`rooms/${currentRoomId}/players/${myPlayerId}`).update(pUpdates);
+        }, 1000); 
+    }
+
+    function triggerAttack() {
+        const targetId = document.getElementById('player-target-select').value;
+        if (!targetId) return triggerNotification("Vui lòng chọn đối thủ muốn tấn công!", "error");
+        
+        db.ref(`rooms/${currentRoomId}`).once('value', snap => {
+            const data = snap.val();
+            const myInfo = data.players[myPlayerId];
+            if (!myInfo || (myInfo.atkDefCharges || 0) <= 0) {
+                return triggerNotification("Bạn không có đủ lượt tấn công/phòng thủ!", "error");
+            }
+            
+            const targetInfo = data.players[targetId];
+            if (!targetInfo) return triggerNotification("Không tìm thấy mục tiêu!", "error");
+
+            let myCharges = myInfo.atkDefCharges - 1;
+            let myScore = myInfo.score || 0;
+            let targetScore = targetInfo.score || 0;
+
+            const isDefending = targetInfo.defendUntil && targetInfo.defendUntil > Date.now();
+            
+            if (isDefending) {
+                myScore = Math.max(0, myScore - 1);
+                triggerNotification(`Tấn công thất bại! ${targetInfo.name} đang được bảo vệ bởi Lá Chắn! Bạn bị phạt -1 điểm!`, "error");
+                db.ref(`rooms/${currentRoomId}/players/${targetId}`).update({ defendUntil: 0 }); 
+            } else {
+                myScore += 1;
+                targetScore = Math.max(0, targetScore - 1);
+                triggerNotification(`Tấn công thành công! Bạn cướp thành công 1 điểm từ ${targetInfo.name}!`, "success");
+            }
+
+            db.ref(`rooms/${currentRoomId}/players/${myPlayerId}`).update({
+                atkDefCharges: myCharges,
+                score: myScore,
+                lastScoreChangeTime: Date.now()
+            });
+
+            db.ref(`rooms/${currentRoomId}/players/${targetId}`).update({
+                score: targetScore,
+                lastScoreChangeTime: Date.now()
+            });
+        });
+    }
+
+    function triggerDefense() {
+        db.ref(`rooms/${currentRoomId}`).once('value', snap => {
+            const data = snap.val();
+            const myInfo = data.players[myPlayerId];
+            if (!myInfo || (myInfo.atkDefCharges || 0) <= 0) {
+                return triggerNotification("Bạn không có đủ lượt tấn công/phòng thủ!", "error");
+            }
+
+            let myCharges = myInfo.atkDefCharges - 1;
+            let defendTime = Date.now() + 15000; 
+
+            db.ref(`rooms/${currentRoomId}/players/${myPlayerId}`).update({
+                atkDefCharges: myCharges,
+                defendUntil: defendTime
+            }).then(() => {
+                triggerNotification("Đã kích hoạt Lá Chắn bảo vệ trong 15 giây!", "success");
+            });
+        });
+    }
+
+    function initRaceTrackDOM(players, poolId = 'race-pool') {
+        const pool = document.getElementById(poolId);
+        if (!pool) return;
+        
+        Array.from(pool.children).forEach(c => { 
+            if(!c.classList.contains('finish-line') && !c.classList.contains('start-line') && !c.classList.contains('scenery-backdrop')) {
+                c.remove(); 
+            }
+        });
+        
+        let sortedKeys = Object.keys(players).sort();
+        
+        sortedKeys.forEach((key) => {
+            let div = document.createElement('div');
+            div.className = `swimmer-duck ${key === myPlayerId ? 'my-duck' : ''}`;
+            div.id = `${poolId}-duck-${key}`;
+            div.style.top = `110px`; 
+            div.style.left = `-100px`; 
+            
+            let randDelay = (Math.random() * 2).toFixed(2);
+            let randDuration = (2.5 + Math.random() * 2).toFixed(2);
+            let teamLabel = players[key].team ? ` [Đội ${players[key].team}]` : '';
+            div.innerHTML = `
+                <div class="swimmer-name">${players[key].name}${teamLabel}</div>
+                <div class="duck-ripple"></div>
+                <div class="duck-shield-aura"></div>
+                <img src="${duckImages[players[key].duckIndex]}" style="animation: gentleFloat ${randDuration}s ease-in-out infinite; animation-delay: ${randDelay}s;" class="floating-duck-gentle">
+            `;
+            pool.appendChild(div);
+        });
+    }
+
+    function updateRaceTrackPositions(players, totalQs, dataSettings, timeLeft, poolId = 'race-pool') {
+        const pool = document.getElementById(poolId);
+        if (!pool) return;
+
+        const currentDuckCount = pool.querySelectorAll('.swimmer-duck').length;
+        if (currentDuckCount !== Object.keys(players).length) {
+            initRaceTrackDOM(players, poolId);
+        }
+        
+        let teamMode = dataSettings.teamMode;
+        let targetScore = dataSettings.targetScore > 0 ? dataSettings.targetScore : totalQs;
+
+        let teamScores = {}; let teamMemberCounts = {};
+        if(teamMode) { 
+            Object.values(players).forEach(p => { 
+                if(p.team) { 
+                    teamScores[p.team] = (teamScores[p.team]||0) + (p.score||0); 
+                    teamMemberCounts[p.team] = (teamMemberCounts[p.team]||0) + 1; 
+                }
+            }); 
+        }
+
+        let maxProgressPx = 40; let myDuckProgressPx = 40; 
+        let sortedKeys = Object.keys(players).sort(); 
+
+        let clientHeight = pool.clientHeight || 350;
+        let availableHeight = clientHeight - 140; 
+        
+        let maxLanes = 10;
+        let laneHeight = maxLanes > 0 ? (availableHeight / maxLanes) : 24;
+
+        let startLineX = 350;   
+        let finishLineX = 1950; 
+        let totalRaceDistance = finishLineX - startLineX;
+        let scoreMultiplier = totalRaceDistance / (targetScore || 1);
+        let dampMultiplier = scoreMultiplier * 0.75; 
+
+        sortedKeys.forEach((key, index) => {
+            let duckEl = document.getElementById(`${poolId}-duck-${key}`);
+            if(duckEl) {
+                const isDefending = players[key].defendUntil && players[key].defendUntil > Date.now();
+                if (isDefending) {
+                    duckEl.classList.add('duck-shield-active');
+                } else {
+                    duckEl.classList.remove('duck-shield-active');
+                }
+
+                let currentScore = teamMode ? ((teamScores[players[key].team] || 0) / (teamMemberCounts[players[key].team] || 1)) : (players[key].score || 0);
+                
+                let col = Math.floor(index / 10); 
+                let row = index % 10;            
+                
+                let charSum = 0;
+                for(let c=0; c<key.length; c++) charSum += key.charCodeAt(c);
+                let staticOffset = (charSum % 7) * 4 - 12; 
+
+                let topPx = 110 + (row * laneHeight);
+                if (col % 2 === 1) {
+                    topPx += (laneHeight / 2); 
+                }
+
+                let progressPx;
+                
+                if (currentScore === 0) {
+                    progressPx = startLineX - 86 - (col * 43) + staticOffset;
+                    if (progressPx < 10) progressPx = 10; 
+                } else if (currentScore >= targetScore) {
+                    progressPx = finishLineX + 20 + (row * 15);
+                } else {
+                    let lastAction = players[key].lastScoreChangeTime || Date.now();
+                    let idleTimeSeconds = (Date.now() - lastAction) / 1000;
+                    
+                    let speedBonus = Math.max(0, 25 - (idleTimeSeconds * 0.4)); 
+                    let driftBack = Math.min(80, idleTimeSeconds * 0.5);        
+                    
+                    progressPx = startLineX + (currentScore * dampMultiplier) + speedBonus - driftBack + staticOffset; 
+                    
+                    if (progressPx < startLineX) progressPx = startLineX; 
+                    if (progressPx > finishLineX) progressPx = finishLineX;
+                }
+                
+                duckEl.style.left = `${progressPx}px`;
+                duckEl.style.top = `${topPx}px`;
+                duckEl.style.opacity = 1;
+                duckEl.style.zIndex = Math.floor(topPx);
+
+                if (progressPx > maxProgressPx) { maxProgressPx = progressPx; }
+                if (key === myPlayerId) { myDuckProgressPx = progressPx; }
             }
         });
 
-        initAuth();
+        const viewportWidth = pool.parentElement.clientWidth || 1200;
+        let trackFocusPx = isHost ? maxProgressPx : myDuckProgressPx;
+        let cameraOffset = trackFocusPx - (viewportWidth / 2) + 80;
+        
+        if (cameraOffset < 0) cameraOffset = 0;
+        if (cameraOffset > (2300 - viewportWidth)) cameraOffset = 2300 - viewportWidth;
 
-        // --- XỬ LÝ PHÒNG (LOBBY) ---
+        pool.style.transform = `translateX(-${cameraOffset}px)`;
+    }
 
-        window.createNewRoom = async function() {
-            if (!userId) return showCustomAlert("Lỗi", "Hệ thống chưa kết nối xong, thử lại sau vài giây.");
+    function listenToRoom() {
+        db.ref('rooms/' + currentRoomId).on('value', snap => {
+            const data = snap.val();
             
-            const newRoomId = Math.floor(100000 + Math.random() * 900000).toString();
-            const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', newRoomId);
-
-            const initialRoomState = {
-                roomId: newRoomId,
-                hostId: userId,
-                status: 'waiting', 
-                questions: [], // Mảng chứa câu hỏi { q, opts[], ans }
-                players: {}    // Chứa thông tin người chơi, Host KHÔNG nằm trong này
-            };
-
-            try {
-                await setDoc(roomRef, initialRoomState);
-                currentRoomId = newRoomId;
-                localQuestions = [];
-                listenToRoom(newRoomId);
-                switchScreen('roomScreen');
-            } catch (error) {
-                console.error("Lỗi tạo phòng: ", error);
-                showCustomAlert("Lỗi", "Không thể tạo phòng.");
+            if(!data) { 
+                triggerNotification("Phòng đã đóng hoặc kết nối thất bại!", "error"); 
+                setTimeout(()=>window.location.reload(), 1500); 
+                return; 
             }
-        }
 
-        window.joinExistingRoom = async function() {
-            if (!userId) return showCustomAlert("Lỗi", "Hệ thống chưa kết nối xong.");
+            const players = data.players || {}; const pKeys = Object.keys(players);
             
-            const inputVal = document.getElementById('roomCodeInput').value.trim();
-            if (!inputVal) return showCustomAlert("Chú ý", "Vui lòng nhập mã phòng.");
-
-            const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', inputVal);
-            
-            try {
-                const roomSnap = await getDoc(roomRef);
-                if (!roomSnap.exists()) {
-                    return showCustomAlert("Lỗi", "Phòng không tồn tại.");
-                }
-
-                const roomData = roomSnap.data();
-                if (roomData.status !== 'waiting') {
-                    return showCustomAlert("Thông báo", "Trò chơi đã bắt đầu hoặc kết thúc, không thể tham gia.");
-                }
-
-                if (roomData.hostId === userId) {
-                    // Nếu chính là host join lại
-                    currentRoomId = inputVal;
-                    listenToRoom(inputVal);
-                    switchScreen('roomScreen');
-                    return;
-                }
-
-                // Thêm người chơi vào phòng
-                const updatedPlayers = { ...roomData.players };
-                updatedPlayers[userId] = {
-                    id: userId,
-                    name: myName,
-                    duckIdx: selectedDuckIdx,
-                    currentQ: 0,
-                    progress: 0,
-                    finishTime: 0
-                };
-
-                await updateDoc(roomRef, { players: updatedPlayers });
-                currentRoomId = inputVal;
-                listenToRoom(inputVal);
-                switchScreen('roomScreen');
-            } catch (error) {
-                console.error("Lỗi vào phòng: ", error);
-                showCustomAlert("Lỗi", "Không thể tham gia phòng.");
+            if (!isHost && data.players && !data.players[myPlayerId] && data.state.status !== 'finished') {
+                 triggerNotification("Bạn đã rời khỏi phòng đua học tập!", "error");
+                 setTimeout(() => window.location.reload(), 1500);
+                 return;
             }
-        }
 
-        window.leaveRoom = async function() {
-            if (!currentRoomId || !currentRoomData) return;
-            const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', currentRoomId);
+            const totalQs = data.questions ? data.questions.length : 1; 
+            const timeLeft = data.state.timeLeft || 0;
+            const targetScore = data.settings.targetScore > 0 ? data.settings.targetScore : totalQs;
+            const bonusMode = data.state.bonusMode || { type: 'normal' };
+            const isLocked = data.state.locked || false;
             
-            try {
-                if (currentRoomData.hostId === userId) {
-                    await setDoc(roomRef, { status: 'deleted' }); // Xoá phòng
+            const newStatus = data.state.status;
+            if (lastRoomStatus === 'lobby' && newStatus === 'playing') {
+                playSFX('start'); 
+            } else if (lastRoomStatus === 'playing' && newStatus === 'finished') {
+                playSFX('cheer'); 
+            }
+            lastRoomStatus = newStatus;
+
+            const icon = soundEnabled ? "🔊" : "🔇";
+            document.querySelectorAll('.sound-toggle-btn').forEach(btn => {
+                btn.innerHTML = icon;
+            });
+
+            if (isHost && document.getElementById('host-bonus-status-alert')) {
+                let statusText = "";
+                if (isLocked) statusText += "HỆ THỐNG ĐANG KHÓA TRẢ LỜI. ";
+                if (bonusMode.type === 'x2' && Date.now() < (bonusMode.expireAt || 0)) {
+                    const remaining = Math.round((bonusMode.expireAt - Date.now()) / 1000);
+                    statusText += `ĐANG X2 ĐIỂM (${remaining}s còn lại). `;
+                } else if (bonusMode.type === 'x3' && bonusMode.active) {
+                    statusText += "ĐANG X3 ĐIỂM (Áp dụng cho câu trả lời kế tiếp). ";
+                }
+                document.getElementById('host-bonus-status-alert').innerText = statusText || "Đường đua hoạt động bình thường.";
+            }
+
+            if (!isHost && document.getElementById('player-bonus-banner')) {
+                const banner = document.getElementById('player-bonus-banner');
+                if (isLocked) {
+                    banner.style.display = "block";
+                    banner.style.background = "var(--danger)";
+                    banner.style.color = "white";
+                    banner.innerText = "GIÁO VIÊN ĐÃ TẠM KHÓA ĐƯỜNG ĐUA! VUI LÒNG ĐỢI...";
+                } else if (bonusMode.type === 'x2' && Date.now() < (bonusMode.expireAt || 0)) {
+                    banner.style.display = "block";
+                    banner.style.background = "var(--success)";
+                    banner.style.color = "white";
+                    const rem = Math.round((bonusMode.expireAt - Date.now()) / 1000);
+                    banner.innerText = `CƠ HỘI VÀNG! NHÂN ĐÔI ĐIỂM SỐ ĐANG DIỄN RA (${rem}s)!`;
+                } else if (bonusMode.type === 'x3' && bonusMode.active) {
+                    banner.style.display = "block";
+                    banner.style.background = "var(--warning)";
+                    banner.style.color = "white";
+                    banner.innerText = "BÙNG NỔ! NHÂN 3 ĐIỂM CHO CÂU TRẢ LỜI TIẾP THEO!";
                 } else {
-                    const playersUpdate = { ...currentRoomData.players };
-                    delete playersUpdate[userId];
-                    await updateDoc(roomRef, { players: playersUpdate });
+                    banner.style.display = "none";
                 }
-            } catch (e) {
-                console.error(e);
-            }
-            resetToLobby();
-        }
-
-        function listenToRoom(roomId) {
-            if (roomUnsubscribe) roomUnsubscribe();
-            const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', roomId);
-            
-            roomUnsubscribe = onSnapshot(roomRef, (snapshot) => {
-                if (!snapshot.exists() || snapshot.data().status === 'deleted') {
-                    if (currentRoomId) {
-                        showCustomAlert("Thông báo", "Phòng đã bị đóng.");
-                        resetToLobby();
-                    }
-                    return;
-                }
-
-                const roomData = snapshot.data();
-                currentRoomData = roomData;
-
-                // Cập nhật giao diện theo trạng thái phòng
-                if (roomData.status === 'waiting') {
-                    updateRoomWaitingUI(roomData);
-                } else if (roomData.status === 'playing') {
-                    updateGameUI(roomData);
-                } else if (roomData.status === 'finished') {
-                    showResultScreen(roomData);
-                }
-
-            }, (error) => console.error(error));
-        }
-
-        // --- CÁC HÀM CẬP NHẬT GIAO DIỆN ---
-
-        function switchScreen(screenId) {
-            ['lobbyScreen', 'roomScreen', 'gameScreen', 'resultScreen'].forEach(id => {
-                document.getElementById(id).classList.add('hidden');
-            });
-            document.getElementById(screenId).classList.remove('hidden');
-        }
-
-        function updateRoomWaitingUI(roomData) {
-            switchScreen('roomScreen');
-            document.getElementById('displayRoomId').innerText = roomData.roomId;
-
-            const isHost = roomData.hostId === userId;
-            
-            // Hiển thị phần UI phù hợp với vai trò
-            document.getElementById('hostSetupSection').classList.toggle('hidden', !isHost);
-            document.getElementById('playerSetupSection').classList.toggle('hidden', isHost);
-
-            // Render danh sách người chơi chờ
-            const playerIds = Object.keys(roomData.players || {});
-            document.getElementById('playerCount').innerText = playerIds.length;
-            
-            const listEl = document.getElementById('waitingPlayerList');
-            listEl.innerHTML = '';
-            
-            playerIds.forEach(id => {
-                const p = roomData.players[id];
-                const item = document.createElement('div');
-                item.className = "flex items-center space-x-3 bg-white p-2 border border-slate-100 rounded";
-                item.innerHTML = `
-                    <div class="w-10 h-10 bg-slate-50 border rounded flex items-center justify-center">
-                        <img src="${DUCK_IMAGES[p.duckIdx]}" class="w-8 h-8 object-contain">
-                    </div>
-                    <span class="font-bold text-slate-700">${p.name} ${id === userId ? '(Bạn)' : ''}</span>
-                `;
-                listEl.appendChild(item);
-            });
-
-            // Giao diện Host
-            if (isHost) {
-                renderQuestionListHost(roomData.questions);
-                document.getElementById('startGameBtn').disabled = roomData.questions.length === 0;
-            }
-        }
-
-        // --- CHỨC NĂNG CỦA HOST ---
-
-        window.addQuestion = async function() {
-            const q = document.getElementById('qInput').value.trim();
-            const o1 = document.getElementById('opt1').value.trim();
-            const o2 = document.getElementById('opt2').value.trim();
-            const o3 = document.getElementById('opt3').value.trim();
-            const o4 = document.getElementById('opt4').value.trim();
-            const ans = parseInt(document.getElementById('correctOpt').value);
-
-            if (!q || !o1 || !o2 || !o3 || !o4) {
-                return showCustomAlert("Lỗi", "Vui lòng nhập đầy đủ câu hỏi và 4 đáp án.");
             }
 
-            const newQ = { q, opts: [o1, o2, o3, o4], ans };
-            const updatedQuestions = [...(currentRoomData.questions || []), newQ];
-
-            const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', currentRoomId);
-            try {
-                await updateDoc(roomRef, { questions: updatedQuestions });
-                // Reset form
-                document.getElementById('qInput').value = '';
-                document.getElementById('opt1').value = '';
-                document.getElementById('opt2').value = '';
-                document.getElementById('opt3').value = '';
-                document.getElementById('opt4').value = '';
-            } catch (e) { console.error(e); }
-        }
-
-        function renderQuestionListHost(questions) {
-            const listEl = document.getElementById('questionList');
-            if (!questions || questions.length === 0) {
-                listEl.innerHTML = '<p class="text-sm text-slate-400 italic text-center py-4">Chưa có câu hỏi nào. Vui lòng thêm câu hỏi.</p>';
-                return;
+            if (document.getElementById('host-game-room-id')) {
+                document.getElementById('host-game-room-id').innerText = currentRoomId;
             }
-            listEl.innerHTML = '';
-            questions.forEach((item, idx) => {
-                const qDiv = document.createElement('div');
-                qDiv.className = "bg-white border p-3 rounded flex justify-between items-center";
-                qDiv.innerHTML = `
-                    <div class="text-sm">
-                        <strong class="text-slate-700">Câu ${idx + 1}:</strong> ${item.q} 
-                        <span class="text-green-600 block text-xs mt-1">Đ.Án: ${item.opts[item.ans]}</span>
-                    </div>
-                `;
-                listEl.appendChild(qDiv);
-            });
-        }
-
-        window.startGame = async function() {
-            if (currentRoomData.hostId !== userId) return;
-            const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', currentRoomId);
-            try {
-                await updateDoc(roomRef, { status: 'playing' });
-            } catch (e) { console.error(e); }
-        }
-
-        window.endGameEarly = async function() {
-            if (currentRoomData.hostId !== userId) return;
-            const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', currentRoomId);
-            try {
-                await updateDoc(roomRef, { status: 'finished' });
-            } catch (e) { console.error(e); }
-        }
-
-        // --- CHỨC NĂNG CỦA PLAYER ---
-
-        window.updateMyProfile = async function() {
-            const inputVal = document.getElementById('playerNameInput').value.trim();
-            if (inputVal) myName = inputVal;
-            syncPlayerToFirebase();
-        }
-
-        window.selectDuck = function(idx) {
-            selectedDuckIdx = idx;
-            document.querySelectorAll('.duck-option-btn').forEach(btn => {
-                if (parseInt(btn.getAttribute('data-idx')) === idx) {
-                    btn.classList.add('border-blue-500', 'bg-blue-50');
-                } else {
-                    btn.classList.remove('border-blue-500', 'bg-blue-50');
-                }
-            });
-            syncPlayerToFirebase();
-        }
-
-        async function syncPlayerToFirebase() {
-            if (!currentRoomId || !currentRoomData || currentRoomData.hostId === userId) return;
-            // Chỉ cập nhật nếu đang ở sảnh
-            if (currentRoomData.status !== 'waiting') return; 
-
-            const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', currentRoomId);
-            const playersUpdate = { ...currentRoomData.players };
-            if (playersUpdate[userId]) {
-                playersUpdate[userId].name = myName;
-                playersUpdate[userId].duckIdx = selectedDuckIdx;
-                await updateDoc(roomRef, { players: playersUpdate });
+            if (document.getElementById('player-game-room-id')) {
+                document.getElementById('player-game-room-id').innerText = currentRoomId;
             }
-        }
 
-        // --- LOGIC TRÒ CHƠI KHI ĐANG PLAY ---
-
-        function updateGameUI(roomData) {
-            switchScreen('gameScreen');
-            const isHost = roomData.hostId === userId;
-            
-            document.getElementById('playerQuizSection').classList.toggle('hidden', isHost);
-            document.getElementById('hostDashboardSection').classList.toggle('hidden', !isHost);
-
-            renderRaceTracks(roomData);
-
-            if (!isHost) {
-                renderCurrentQuestion(roomData);
-            } else {
-                checkAutoFinish(roomData);
+            if(isHost) {
+                if(document.getElementById('host-timer')) document.getElementById('host-timer').innerText = timeLeft + "s";
+                if(document.getElementById('host-target-score')) document.getElementById('host-target-score').innerText = targetScore;
             }
-        }
+            if(!isHost && document.getElementById('player-timer')) {
+                document.getElementById('player-timer').innerText = timeLeft + "s";
+                document.getElementById('player-score-display').innerText = players[myPlayerId]?.score || 0;
+            }
 
-        function renderRaceTracks(roomData) {
-            const container = document.getElementById('tracksContainer');
-            const players = roomData.players || {};
-            const playerIds = Object.keys(players);
-            
-            // Xây dựng track nếu chưa có
-            if (container.children.length !== playerIds.length) {
-                container.innerHTML = '';
-                playerIds.forEach(id => {
-                    const track = document.createElement('div');
-                    track.className = "water-track h-12 flex items-center";
-                    track.innerHTML = `
-                        <div id="duck-${id}" class="duck-swim absolute flex flex-col items-center" style="left: 0%; transform: translateX(-50%);">
-                            <div class="bg-slate-800 text-white text-[10px] px-1 rounded whitespace-nowrap mb-0.5">${players[id].name}</div>
-                            <img src="${DUCK_IMAGES[players[id].duckIdx]}" class="w-8 h-8 object-contain">
-                        </div>
-                    `;
-                    container.appendChild(track);
+            if(isHost) {
+                let accHtml = '';
+                pKeys.forEach(k => {
+                    let p = players[k];
+                    let corr = p.correctCount || 0;
+                    let wr = p.wrongCount || 0;
+                    let total = corr + wr;
+                    let rate = total > 0 ? Math.round((corr / total) * 100) : 0;
+                    accHtml += `
+                        <span style="background: white; padding: 4px 10px; border: 1.5px solid var(--border); border-radius: 8px; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
+                            ${p.name}: <strong style="color:var(--success)">${corr} Đúng</strong> - <strong style="color:var(--danger)">${wr} Sai</strong> (${rate}%)
+                        </span>`;
                 });
-            }
-
-            // Cập nhật vị trí
-            playerIds.forEach(id => {
-                const el = document.getElementById(`duck-${id}`);
-                if (el) {
-                    // Start 5%, End 90%
-                    const targetPercent = 5 + (players[id].progress * 0.85);
-                    el.style.left = `${targetPercent}%`;
+                const accListContainer = document.getElementById('host-players-accuracy-list');
+                if (accListContainer) {
+                    accListContainer.innerHTML = accHtml || '<span style="color: var(--text-muted); font-style: italic;">Chưa có dữ liệu làm bài</span>';
                 }
-            });
-        }
-
-        function renderCurrentQuestion(roomData) {
-            const me = roomData.players[userId];
-            if (!me) return;
-
-            const questions = roomData.questions || [];
-            const totalQ = questions.length;
-
-            if (me.currentQ >= totalQ) {
-                // Đã làm xong
-                document.getElementById('quizContainer').classList.add('hidden');
-                document.getElementById('finishedMessage').classList.remove('hidden');
-                return;
-            }
-
-            document.getElementById('quizContainer').classList.remove('hidden');
-            document.getElementById('finishedMessage').classList.add('hidden');
-
-            const qData = questions[me.currentQ];
-            document.getElementById('questionProgressText').innerText = `Câu hỏi ${me.currentQ + 1} / ${totalQ}`;
-            document.getElementById('questionText').innerText = qData.q;
-
-            const optContainer = document.getElementById('optionsContainer');
-            optContainer.innerHTML = '';
-            
-            qData.opts.forEach((optStr, idx) => {
-                const btn = document.createElement('button');
-                btn.className = "bg-white hover:bg-blue-50 border-2 border-slate-200 hover:border-blue-400 text-slate-700 font-bold py-4 px-4 rounded-xl text-lg transition shadow-sm text-left";
-                btn.innerText = optStr;
-                btn.onclick = () => handleAnswer(idx, qData.ans, totalQ);
-                optContainer.appendChild(btn);
-            });
-        }
-
-        window.handleAnswer = async function(selectedIdx, correctIdx, totalQ) {
-            const feedback = document.getElementById('feedbackText');
-            feedback.classList.remove('opacity-0');
-            
-            // Disable buttons temporarily
-            const btns = document.getElementById('optionsContainer').querySelectorAll('button');
-            btns.forEach(b => b.disabled = true);
-
-            if (selectedIdx === correctIdx) {
-                feedback.innerText = "Chính xác!";
-                feedback.className = "text-sm font-bold text-green-600 transition-opacity";
-                
-                // Update Firestore
-                const me = currentRoomData.players[userId];
-                const newQIndex = me.currentQ + 1;
-                const newProgress = (newQIndex / totalQ) * 100;
-                
-                const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', currentRoomId);
-                const updatePathStr = `players.${userId}`;
-                
-                const updatedMeObj = {
-                    ...me,
-                    currentQ: newQIndex,
-                    progress: newProgress,
-                    finishTime: newQIndex >= totalQ ? Date.now() : 0
-                };
-
-                try {
-                    // Update chỉ riêng object của mình để tránh xung đột
-                    await updateDoc(roomRef, {
-                        [updatePathStr]: updatedMeObj
-                    });
-                } catch (e) { console.error(e); }
-
             } else {
-                feedback.innerText = "Sai rồi, thử lại nhé!";
-                feedback.className = "text-sm font-bold text-red-500 transition-opacity";
-                
-                // Phạt 1 giây trước khi cho bấm lại
-                setTimeout(() => {
-                    feedback.classList.add('opacity-0');
-                    btns.forEach(b => b.disabled = false);
-                }, 1000);
+                let myInfo = players[myPlayerId];
+                if (myInfo) {
+                    let corr = myInfo.correctCount || 0;
+                    let wr = myInfo.wrongCount || 0;
+                    let total = corr + wr;
+                    let rate = total > 0 ? Math.round((corr / total) * 100) : 0;
+                    const corrEl = document.getElementById('stat-correct');
+                    const wrEl = document.getElementById('stat-wrong');
+                    const rateEl = document.getElementById('stat-rate');
+                    if (corrEl) corrEl.innerText = corr;
+                    if (wrEl) wrEl.innerText = wr;
+                    if (rateEl) rateEl.innerText = rate + "%";
+                }
             }
-        }
 
-        // Host tự động check xem tất cả đã xong chưa
-        async function checkAutoFinish(roomData) {
-            const players = Object.values(roomData.players || {});
-            const totalQ = (roomData.questions || []).length;
-            if (players.length === 0 || totalQ === 0) return;
+            if(isHost && data.state.status === 'playing' && pKeys.length > 0) {
+                let allFinished = true;
+                pKeys.forEach(k => { 
+                    let pScore = players[k].score || 0;
+                    let pQIndex = players[k].qIndex || 0;
+                    let limit = players[k].customQOrder ? players[k].customQOrder.length : totalQs;
 
-            const allFinished = players.every(p => p.currentQ >= totalQ);
-            if (allFinished) {
-                const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', currentRoomId);
-                await updateDoc(roomRef, { status: 'finished' });
+                    if (data.settings.targetScore > 0) {
+                        if (pScore < targetScore) allFinished = false;
+                    } else {
+                        let wrongList = players[k].wrongQuestions ? players[k].wrongQuestions.split(',').filter(x => x !== "") : [];
+                        if (pQIndex < limit || wrongList.length > 0) allFinished = false;
+                    }
+                });
+                if(allFinished) { endGameEarly(); return; }
             }
-        }
 
-        // --- KẾT QUẢ ---
-
-        function showResultScreen(roomData) {
-            switchScreen('resultScreen');
-            
-            const players = Object.values(roomData.players || {});
-            
-            // Lọc ra những người đã về đích và sắp xếp theo thời gian hoàn thành (sớm nhất đứng trước)
-            const finishedPlayers = players.filter(p => p.finishTime > 0)
-                                           .sort((a, b) => a.finishTime - b.finishTime);
-            
-            // Những người chưa xong (nếu host end sớm)
-            const dnfPlayers = players.filter(p => p.finishTime === 0)
-                                      .sort((a, b) => b.progress - a.progress); // Xếp theo tiến trình cao hơn
-                                      
-            const sortedPlayers = [...finishedPlayers, ...dnfPlayers];
-
-            const listEl = document.getElementById('leaderboardList');
-            listEl.innerHTML = '';
-
-            sortedPlayers.forEach((p, index) => {
-                const isFinished = p.finishTime > 0;
-                let rankStr = `Hạng ${index + 1}`;
-                let colorClass = "text-slate-600";
+            if(data.state.status === 'lobby') {
+                if(!isHost) {
+                    isReady = false;
+                    const btnReady = document.getElementById('btn-player-ready');
+                    if (btnReady) {
+                        btnReady.innerText = "SẴN SÀNG";
+                        btnReady.style.background = 'var(--primary)';
+                    }
+                    switchScreen('screen-player-lobby');
+                    
+                    const qBox = document.getElementById('player-question-text');
+                    if (qBox) {
+                        qBox.removeAttribute('data-q-index');
+                        qBox.removeAttribute('data-order-len');
+                        qBox.innerHTML = "Đang khởi động đường đua...";
+                    }
+                    const optBox = document.getElementById('player-options');
+                    if (optBox) optBox.innerHTML = "";
+                    const submitCont = document.getElementById('player-multi-submit-container');
+                    if (submitCont) submitCont.style.display = "none";
+                    const statusMsg = document.getElementById('player-status-msg');
+                    if (statusMsg) statusMsg.innerHTML = "";
+                } else {
+                    switchScreen('screen-host-lobby');
+                }
                 
-                if (index === 0 && isFinished) { rankStr = "VÔ ĐỊCH"; colorClass = "text-yellow-600"; }
-                if (index === 1 && isFinished) { rankStr = "HẠNG NHÌ"; colorClass = "text-slate-500"; }
-                if (index === 2 && isFinished) { rankStr = "HẠNG BA"; colorClass = "text-orange-700"; }
+                if(isHost) {
+                    document.getElementById('host-player-count').innerText = pKeys.length;
+                    let html = ''; let allReady = pKeys.length > 0;
+                    pKeys.forEach(k => {
+                        let p = players[k]; if(!p.isReady) allReady = false;
+                        html += `<div class="player-card"><button class="kick-btn" onclick="kickPlayer('${k}')">✕</button><img src="${duckImages[p.duckIndex]}"><span title="${p.name}">${p.name}</span><div class="status-text ${p.isReady?'ready':'wait'}">${p.isReady?'Sẵn sàng':'Đang chờ'}</div></div>`;
+                    });
+                    document.getElementById('host-player-list').innerHTML = html || '<p style="color: var(--text-muted); font-style:italic; width:100%; text-align: center; font-size: 13px;">Đang chờ học sinh tham gia...</p>';
+                    document.getElementById('btn-start-game').style.display = allReady ? 'inline-flex' : 'none';
+                } else {
+                    let html = '';
+                    const myInfo = players[myPlayerId];
+                    if (myInfo) { 
+                        document.getElementById('header-my-duck').src = duckImages[myInfo.duckIndex]; 
+                        isReady = myInfo.isReady || false;
+                        const btn = document.getElementById('btn-player-ready');
+                        if (btn) {
+                            btn.innerText = isReady ? "ĐÃ SẴN SÀNG" : "SẴN SÀNG";
+                            btn.style.background = isReady ? 'var(--success)' : 'var(--primary)';
+                        }
+                    }
 
-                const row = document.createElement('div');
-                row.className = "bg-white p-4 rounded-xl border border-slate-200 flex items-center justify-between shadow-sm";
-                row.innerHTML = `
-                    <div class="flex items-center space-x-4">
-                        <span class="font-bold text-lg w-20 text-left ${colorClass}">${rankStr}</span>
-                        <img src="${DUCK_IMAGES[p.duckIdx]}" class="w-10 h-10">
-                        <span class="font-bold text-slate-800 text-lg">${p.name}</span>
-                    </div>
-                    <span class="text-sm font-bold ${isFinished ? 'text-green-600' : 'text-slate-400'}">
-                        ${isFinished ? 'Hoàn thành' : `Tiến độ: ${Math.round(p.progress)}%`}
-                    </span>
-                `;
-                listEl.appendChild(row);
-            });
-        }
+                    pKeys.forEach(k => {
+                        const p = players[k]; const isMe = (k === myPlayerId);
+                        const cardHighlight = isMe ? 'is-me' : '';
+                        html += `
+                            <div class="player-card ${cardHighlight}">
+                                <img src="${duckImages[p.duckIndex]}" class="floating-duck-gentle">
+                                <span title="${p.name}" style="${isMe ? 'color: var(--secondary); font-weight:800;' : ''}">${p.name}</span>
+                                <div class="status-text ${p.isReady?'ready':'wait'}">${p.isReady?'Sẵn sàng':'Đang chờ'}</div>
+                            </div>
+                        `;
+                    });
+                    document.getElementById('player-lobby-other-list').innerHTML = html || '<p style="color: var(--text-muted); font-size:13px; width:100%;">Đang chờ các bạn học sinh khác vào phòng...</p>';
+                }
+            }
 
-        window.resetToLobby = function() {
-            if (roomUnsubscribe) roomUnsubscribe();
-            currentRoomId = null;
-            currentRoomData = null;
-            switchScreen('lobbyScreen');
-        }
+            if(data.state.status === 'playing' || data.state.status === 'timeup') {
+                if(isHost && !document.getElementById('screen-host-game').classList.contains('active')) { switchScreen('screen-host-game'); }
+                if(!isHost && !document.getElementById('screen-player-game').classList.contains('active')) { switchScreen('screen-player-game'); }
 
-    </script>
+                if(isHost) { 
+                    let leadPlayer = "-"; let leadScore = -1; let leadTime = Infinity;
+                    pKeys.forEach(k => {
+                        let score = players[k].score || 0;
+                        let time = players[k].lastScoreChangeTime || Infinity;
+                        if (score > leadScore || (score === leadScore && time < leadTime)) { 
+                            leadScore = score; 
+                            leadPlayer = players[k].name; 
+                            leadTime = time;
+                        }
+                    });
+                    document.getElementById('host-current-q-num').innerText = leadPlayer !== "-" ? `${leadPlayer} (${leadScore}đ)` : "-";
+                    updateRaceTrackPositions(players, totalQs, data.settings, timeLeft, 'race-pool'); 
+                }
+
+                if(!isHost) {
+                    updateRaceTrackPositions(players, totalQs, data.settings, timeLeft, 'player-race-pool');
+                    
+                    let myInfo = players[myPlayerId]; 
+                    let myScore = myInfo?.score || 0;
+                    let myQIndex = myInfo?.qIndex || 0;
+                    
+                    if (data.state.status === 'timeup') {
+                        document.getElementById('player-status-msg').innerText = "Đã hết thời gian đua!";
+                        document.getElementById('player-options').innerHTML = "";
+                        document.getElementById('player-multi-submit-container').style.display = "none";
+                        document.getElementById('player-atk-def-panel').style.display = "none";
+                        return;
+                    }
+
+                    if (myInfo?.penalty) {
+                        document.getElementById('player-status-msg').innerText = "Bị lùi & Khóa 3 giây...";
+                    }
+
+                    const atkDefPanel = document.getElementById('player-atk-def-panel');
+                    if (data.settings.attackDefenseMode && myInfo) {
+                        atkDefPanel.style.display = "block";
+                        document.getElementById('player-atk-def-charges').innerText = myInfo.atkDefCharges || 0;
+                        
+                        const targetSelect = document.getElementById('player-target-select');
+                        const currentSelectValue = targetSelect.value;
+                        targetSelect.innerHTML = '<option value="">-- Chọn đối thủ muốn tấn công --</option>';
+                        pKeys.forEach(k => {
+                            if (k !== myPlayerId) {
+                                targetSelect.innerHTML += `<option value="${k}">${players[k].name} (${players[k].score || 0}đ)</option>`;
+                            }
+                        });
+                        targetSelect.value = currentSelectValue;
+                    } else {
+                        atkDefPanel.style.display = "none";
+                    }
+
+                    let wrongList = myInfo?.wrongQuestions ? myInfo.wrongQuestions.split(',').filter(x => x !== "") : [];
+                    let activeQOrder = myInfo?.customQOrder || data.state.qOrder;
+                    
+                    let limit = activeQOrder ? activeQOrder.length : totalQs;
+                    let isFinished = false;
+
+                    if (data.settings.targetScore > 0) {
+                        if (myScore >= targetScore) {
+                            isFinished = true;
+                        } else if (myQIndex >= limit) {
+                            if (data.settings.loopQuestions && wrongList.length > 0) {
+                                let nextOrder = wrongList.map(x => parseInt(x));
+                                db.ref(`rooms/${currentRoomId}/players/${myPlayerId}`).update({
+                                    customQOrder: nextOrder,
+                                    qIndex: 0,
+                                    wrongQuestions: "" 
+                                });
+                            } else {
+                                isFinished = true;
+                            }
+                        }
+                    } else {
+                        if (myQIndex >= limit) {
+                            if (data.settings.loopQuestions && wrongList.length > 0) {
+                                let nextOrder = wrongList.map(x => parseInt(x));
+                                db.ref(`rooms/${currentRoomId}/players/${myPlayerId}`).update({
+                                    customQOrder: nextOrder,
+                                    qIndex: 0,
+                                    wrongQuestions: "" 
+                                });
+                            } else {
+                                isFinished = true;
+                            }
+                        }
+                    }
+
+                    if(isFinished) {
+                        document.getElementById('player-question-text').innerHTML = `
+                            <div style="margin-bottom: 20px; color: var(--success); font-size: 18px; font-weight: 800;">BẠN ĐÃ HOÀN THÀNH VÀ CÁN ĐÍCH!</div>
+                            <div style="display:flex; justify-content:center; gap: 10px;">
+                                <button class="btn-danger" onclick="leaveRoom()">Thoát phòng đua</button>
+                            </div>
+                        `;
+                        document.getElementById('player-options').innerHTML = ""; 
+                        document.getElementById('player-q-counter').innerText = "Đã đích";
+                        document.getElementById('player-multi-submit-container').style.display = "none";
+                    } else {
+                        const mappedIndex = activeQOrder ? activeQOrder[myQIndex] : myQIndex;
+                        const curQ = data.questions[mappedIndex];
+
+                        if(document.getElementById('player-question-text').dataset.qIndex != myQIndex || document.getElementById('player-question-text').dataset.orderLen != limit) {
+                            document.getElementById('player-question-text').dataset.qIndex = myQIndex;
+                            document.getElementById('player-question-text').dataset.orderLen = limit;
+                            document.getElementById('player-q-counter').innerText = `${myQIndex + 1} / ${limit}`;
+                            
+                            playerSelectedIndices = [];
+
+                            if(curQ) {
+                                let qImgHtml = "";
+                                if (curQ.qImg) { qImgHtml = `<img src="${curQ.qImg}" style="max-height: 100px; object-fit: contain; margin-bottom: 8px; display:block; margin-left:auto; margin-right:auto; border-radius:12px;">`; }
+                                
+                                let qTypeTip = "";
+                                if (curQ.type === 'multiple') {
+                                    qTypeTip = `<span style="font-size: 11px; background: #fee2e2; color: #b91c1c; padding: 2px 6px; border-radius: 4px; display: inline-block; margin-bottom: 6px; font-weight:800;">Chọn nhiều đáp án đúng</span>`;
+                                    document.getElementById('player-multi-submit-container').style.display = "block";
+                                } else {
+                                    document.getElementById('player-multi-submit-container').style.display = "none";
+                                }
+
+                                document.getElementById('player-question-text').innerHTML = qTypeTip + qImgHtml + `<div>${curQ.q}</div>`;
+                                
+                                let sizeLimit = (curQ.type === 'boolean') ? 2 : 4;
+                                currentDisplayOrder = Array.from({length: sizeLimit}, (_, i) => i);
+                                
+                                if(data.settings.shuffleAns && curQ.type !== 'boolean') {
+                                    currentDisplayOrder.sort(() => Math.random() - 0.5);
+                                }
+                                
+                                let optsHtml = ''; const alphabet = ['A', 'B', 'C', 'D'];
+                                currentDisplayOrder.forEach((originalIdx, btnIdx) => {
+                                    let optImgHtml = "";
+                                    if (curQ.optionImgs && curQ.optionImgs[originalIdx]) {
+                                        optImgHtml = `<img src="${curQ.optionImgs[originalIdx]}" style="max-height: 40px; object-fit: contain; display:block; margin-bottom:4px; border-radius:8px;">`;
+                                    }
+                                    
+                                    const disabledState = isLocked ? "disabled style='opacity:0.6; cursor:not-allowed;'" : "";
+                                    
+                                    if (curQ.type === 'multiple') {
+                                        optsHtml += `<button id="opt-btn-${btnIdx}" class="option-btn" ${disabledState} onclick="toggleOptionSelect(${btnIdx})">${optImgHtml}<span><strong style="color: var(--secondary); font-size:1.1em">${alphabet[btnIdx]}</strong>. ${curQ.options[originalIdx]}</span></button>`;
+                                    } else {
+                                        optsHtml += `<button class="option-btn" ${disabledState} onclick="submitAnswer(${btnIdx})">${optImgHtml}<span><strong style="color: var(--secondary); font-size:1.1em">${alphabet[btnIdx]}</strong>. ${curQ.options[originalIdx]}</span></button>`;
+                                    }
+                                });
+                                document.getElementById('player-options').innerHTML = optsHtml;
+                            }
+                        }
+                    }
+                }
+            }
+
+            if(data.state.status === 'finished') {
+                document.getElementById('player-multi-submit-container').style.display = "none";
+                document.getElementById('player-atk-def-panel').style.display = "none";
+                if(!document.getElementById('screen-summary').classList.contains('active')) {
+                    switchScreen('screen-summary'); renderSummary(data.players, data.settings.teamMode, data);
+                }
+            }
+        });
+    }
+</script>
 </body>
 </html>
