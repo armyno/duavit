@@ -114,27 +114,6 @@
             box-shadow: none !important;
         }
 
-        .sound-toggle-btn {
-            background: white;
-            border: 1.5px solid var(--border);
-            width: 32px;
-            height: 32px;
-            border-radius: 50% !important;
-            display: inline-flex !important;
-            justify-content: center !important;
-            align-items: center !important;
-            cursor: pointer;
-            font-size: 14px;
-            padding: 0 !important;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-            transition: all 0.2s ease;
-        }
-        .sound-toggle-btn:hover {
-            border-color: var(--secondary);
-            background: #f0f9ff;
-            transform: scale(1.05);
-        }
-
         input, textarea, select {
             padding: 8px 12px; 
             border: 1.5px solid var(--border); 
@@ -645,6 +624,27 @@
         }
         .instruction-box strong { color: var(--text); }
 
+        .sound-toggle-btn {
+            background: white;
+            border: 1.5px solid var(--border);
+            width: 32px;
+            height: 32px;
+            border-radius: 50% !important;
+            display: inline-flex !important;
+            justify-content: center !important;
+            align-items: center !important;
+            cursor: pointer;
+            font-size: 14px;
+            padding: 0 !important;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            transition: all 0.2s ease;
+        }
+        .sound-toggle-btn:hover {
+            border-color: var(--secondary);
+            background: #f0f9ff;
+            transform: scale(1.05);
+        }
+
         .atk-def-card {
             background: #fffbeb;
             border: 2px solid #fbbf24;
@@ -907,6 +907,7 @@
         <div class="compact-header-under">
             <span style="gap: 8px;">
                 Số phòng: <span id="player-game-room-id" class="highlight-text">-</span>
+                Tên: <span id="player-game-name" class="highlight-text">-</span>
                 <button class="sound-toggle-btn" style="width: 28px; height: 28px; font-size: 12px;" onclick="toggleSound()">🔊</button>
             </span>
             <span>Điểm số: <span id="player-score-display" class="highlight-text">0</span></span>
@@ -1053,6 +1054,7 @@
         triggerNotification(soundEnabled ? "Đã bật âm thanh phòng đua!" : "Đã tắt âm thanh phòng đua!", "success");
     }
 
+    // Tiếng kêu vịt ngẫu nhiên mỗi 15 giây
     setInterval(() => {
         const currentScreen = document.querySelector('.screen.active');
         if (!currentScreen) return;
@@ -1246,7 +1248,7 @@
             settings: { timeLimit: 300, targetScore: 0, shuffleAns: true, shuffleQs: true, teamMode: false, teamCount: 2, specialMode: 'normal', loopQuestions: true, attackDefenseMode: false },
             state: { status: 'lobby', timeLeft: 300, locked: false, bonusMode: { type: 'normal' } }, questions: localQuestions
         }).then(() => {
-            // Automatically clear the room if the host closes their browser
+            // Tự động giải phóng phòng khi chủ phòng đóng trình duyệt
             db.ref('rooms/'+currentRoomId).onDisconnect().remove();
 
             document.getElementById('host-room-id-display').innerText = currentRoomId;
@@ -1444,17 +1446,52 @@
             let teams = {};
             pArr.forEach(p => { 
                 if(!p.team) p.team = 1; 
-                if(!teams[p.team]) teams[p.team] = { id: p.team, score: 0, members: [] };
-                teams[p.team].score += (p.score || 0); teams[p.team].members.push(p.name);
+                if(!teams[p.team]) teams[p.team] = { id: p.team, score: 0, members: [], totalDuration: 0 };
+                teams[p.team].score += (p.score || 0); 
+                teams[p.team].members.push(p.name);
+
+                let startTimeVal = (fullData && fullData.state && fullData.state.startTime) ? fullData.state.startTime : 0;
+                let pDur = p.duration || ((p.lastScoreChangeTime || 0) - startTimeVal);
+                if (pDur < 0) pDur = 0;
+                teams[p.team].totalDuration += pDur;
             });
-            let sortedTeams = Object.values(teams).sort((a,b) => b.score - a.score);
+
+            // Tính điểm trung bình cộng & TBC Thời gian làm bài của đội
+            let teamList = Object.values(teams).map(t => {
+                let memberCount = t.members.length || 1;
+                return {
+                    id: t.id,
+                    members: t.members,
+                    totalScore: t.score,
+                    avgScore: t.score / memberCount,
+                    avgDuration: t.totalDuration / memberCount
+                };
+            });
+
+            // Xếp hạng: avgScore lớn hơn lên trước; nếu bằng nhau thì avgDuration nhỏ hơn lên trước
+            let sortedTeams = teamList.sort((a, b) => {
+                if (b.avgScore !== a.avgScore) {
+                    return b.avgScore - a.avgScore;
+                }
+                return a.avgDuration - b.avgDuration;
+            });
             
             sortedTeams.forEach((t, i) => { 
+                let avgDurationSec = Math.round(t.avgDuration / 1000);
+                let min = Math.floor(avgDurationSec / 60);
+                let sec = avgDurationSec % 60;
+                let avgTimeStr = `${min}:${sec < 10 ? '0' : ''}${sec}`;
+
                 htmlList += `
-                    <div class="summary-row ${i<3 ? 'top':''}">
-                        <span>Hạng ${i+1}: Đội ${t.id} (${t.members.length} thành viên)</span>
+                    <div class="summary-row ${i<3 ? 'top':''}" style="font-size: 16px; padding: 12px 24px;">
+                        <div style="display: flex; flex-direction: column; align-items: flex-start; text-align: left;">
+                            <span>Hạng ${i+1}: <strong>Đội ${t.id}</strong> (${t.members.length} thành viên)</span>
+                            <span style="font-size: 12px; color: var(--text-muted); font-weight: 700; margin-top: 2px;">
+                                TBC Điểm: <strong style="color:var(--secondary)">${t.avgScore.toFixed(1)} đ</strong> | TBC Thời gian: <strong style="color:var(--primary)">${avgTimeStr}</strong>
+                            </span>
+                        </div>
                         <div style="flex-grow: 1; border-bottom: 2px dotted var(--border); margin: 0 20px; align-self: center;"></div>
-                        <span><strong>${t.score}</strong> Điểm</span>
+                        <span><strong>${t.totalScore}</strong> Điểm tổng</span>
                     </div>`; 
             });
             const ranks = [2, 1, 3]; 
@@ -1468,11 +1505,12 @@
                                 <span class="rank-num">${badge}</span>
                             </div>
                             <div style="font-weight:800; margin-top:5px; font-size:12px; text-align:center;">Đội ${sortedTeams[r-1].id}</div>
-                            <div style="font-size:11px; color: var(--text-muted); font-weight: 700;">${sortedTeams[r-1].score} điểm</div>
+                            <div style="font-size:11px; color: var(--text-muted); font-weight: 700;">TBC: ${sortedTeams[r-1].avgScore.toFixed(1)} đ</div>
                         </div>`;
                 }
             });
         } else {
+            // Xếp hạng: score lớn lên trước; bằng score thì duration nhỏ (nhanh hơn) lên trước
             let sorted = pArr.sort((a, b) => {
                 let scoreA = a.score || 0;
                 let scoreB = b.score || 0;
@@ -1588,32 +1626,55 @@
         const id = document.getElementById('join-room-id').value.trim(); if(!id) return;
         db.ref('rooms/'+id).once('value').then(snap => {
             if(!snap.exists()) return triggerNotification("Phòng này không tồn tại!", "error");
-            currentRoomId = id; myPlayerId = 'p_'+Math.random().toString(36).substr(2,9); isHost = false;
+            currentRoomId = id; 
+            isHost = false;
             document.getElementById('player-room-id-display').innerText = id;
             
-            myDuckIndex = Math.floor(Math.random() * duckImages.length);
+            // Tìm thông tin lưu trữ cũ để khôi phục phiên nếu vô tình bị thoát
+            let savedRoomId = sessionStorage.getItem('duck_race_room_id');
+            let savedPlayerId = sessionStorage.getItem('duck_race_player_id');
+            let data = snap.val();
+            let recovered = false;
+
+            if (savedRoomId === id && savedPlayerId && data.players && data.players[savedPlayerId]) {
+                myPlayerId = savedPlayerId;
+                myDuckIndex = data.players[myPlayerId].duckIndex || 0;
+                recovered = true;
+                triggerNotification("Đang khôi phục lại phiên chơi của bạn!", "success");
+            } else {
+                myPlayerId = 'p_'+Math.random().toString(36).substr(2,9);
+                myDuckIndex = Math.floor(Math.random() * duckImages.length);
+            }
+
+            sessionStorage.setItem('duck_race_room_id', currentRoomId);
+            sessionStorage.setItem('duck_race_player_id', myPlayerId);
+
             document.getElementById('header-my-duck').src = duckImages[myDuckIndex];
-            
             document.querySelectorAll('.duck-option').forEach((el, idx) => {
                 if(idx === myDuckIndex) { el.style.borderColor = 'var(--secondary)'; el.style.background = '#f0f9ff'; }
             });
-            
-            db.ref(`rooms/${currentRoomId}/players/${myPlayerId}`).set({ 
-                name: 'Học sinh', 
+
+            let initialName = (recovered && data.players[myPlayerId].name) ? data.players[myPlayerId].name : 'Học sinh';
+            document.getElementById('player-name-input').value = initialName;
+
+            let playerPayload = { 
+                name: initialName, 
                 duckIndex: myDuckIndex, 
                 isReady: false, 
-                score: 0, 
-                qIndex: 0, 
-                streak: 0, 
-                penalty: false, 
-                wrongQuestions: "", 
-                correctCount: 0, 
-                wrongCount: 0, 
-                lastScoreChangeTime: Date.now(),
-                atkDefCharges: 0,
-                lastChargedScore: 0,
-                defendUntil: 0
-            }).then(() => {
+                score: recovered ? (data.players[myPlayerId].score || 0) : 0, 
+                qIndex: recovered ? (data.players[myPlayerId].qIndex || 0) : 0, 
+                streak: recovered ? (data.players[myPlayerId].streak || 0) : 0, 
+                penalty: recovered ? (data.players[myPlayerId].penalty || false) : false, 
+                wrongQuestions: recovered ? (data.players[myPlayerId].wrongQuestions || "") : "", 
+                correctCount: recovered ? (data.players[myPlayerId].correctCount || 0) : 0, 
+                wrongCount: recovered ? (data.players[myPlayerId].wrongCount || 0) : 0, 
+                lastScoreChangeTime: recovered ? (data.players[myPlayerId].lastScoreChangeTime || Date.now()) : Date.now(),
+                atkDefCharges: recovered ? (data.players[myPlayerId].atkDefCharges || 0) : 0,
+                lastChargedScore: recovered ? (data.players[myPlayerId].lastChargedScore || 0) : 0,
+                defendUntil: recovered ? (data.players[myPlayerId].defendUntil || 0) : 0
+            };
+
+            db.ref(`rooms/${currentRoomId}/players/${myPlayerId}`).set(playerPayload).then(() => {
                 db.ref(`rooms/${currentRoomId}/players/${myPlayerId}`).onDisconnect().remove();
                 switchScreen('screen-player-lobby'); listenToRoom();
             });
@@ -1633,7 +1694,11 @@
         db.ref(`rooms/${currentRoomId}/players/${myPlayerId}`).update({ isReady: isReady });
     }
 
-    function leaveRoom() { db.ref(`rooms/${currentRoomId}/players/${myPlayerId}`).remove().then(() => window.location.reload()); }
+    function leaveRoom() { 
+        sessionStorage.removeItem('duck_race_room_id');
+        sessionStorage.removeItem('duck_race_player_id');
+        db.ref(`rooms/${currentRoomId}/players/${myPlayerId}`).remove().then(() => window.location.reload()); 
+    }
 
     function submitAnswer(btnIdx) {
         db.ref(`rooms/${currentRoomId}`).once('value', snap => {
@@ -2035,14 +2100,20 @@
             
             if(!data) { 
                 triggerNotification("Phòng đã đóng hoặc kết nối thất bại!", "error"); 
+                // Xoá các session lưu trữ cũ khi phòng đã bị đóng
+                sessionStorage.removeItem('duck_race_room_id');
+                sessionStorage.removeItem('duck_race_player_id');
                 setTimeout(()=>window.location.reload(), 1500); 
                 return; 
             }
 
             const players = data.players || {}; const pKeys = Object.keys(players);
             
+            // Xử lý khi người chơi bị chủ phòng kick
             if (!isHost && (!data.players || !data.players[myPlayerId]) && data.state.status !== 'finished') {
                  triggerNotification("Bạn đã bị mời ra khỏi phòng đua!", "error");
+                 sessionStorage.removeItem('duck_race_room_id');
+                 sessionStorage.removeItem('duck_race_player_id');
                  setTimeout(() => window.location.reload(), 1500);
                  return;
             }
@@ -2106,6 +2177,12 @@
             }
             if (document.getElementById('player-game-room-id')) {
                 document.getElementById('player-game-room-id').innerText = currentRoomId;
+            }
+            if (!isHost && document.getElementById('player-game-name')) {
+                const myInfo = players[myPlayerId];
+                if (myInfo) {
+                    document.getElementById('player-game-name').innerText = myInfo.name || "Học sinh";
+                }
             }
 
             if(isHost) {
@@ -2257,7 +2334,8 @@
                     let leadPlayer = "-"; let leadScore = -1; let leadTime = Infinity;
                     pKeys.forEach(k => {
                         let score = players[k].score || 0;
-                        let time = players[k].lastScoreChangeTime || Infinity;
+                        let startTimeVal = (data && data.state && data.state.startTime) ? data.state.startTime : 0;
+                        let time = players[k].duration || ((players[k].lastScoreChangeTime || 0) - startTimeVal);
                         if (score > leadScore || (score === leadScore && time < leadTime)) { 
                             leadScore = score; 
                             leadPlayer = players[k].name; 
